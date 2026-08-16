@@ -283,7 +283,7 @@ table.timetable{border-collapse:separate;border-spacing:0;min-width:860px;width:
     <div class="group">系统</div>
     <a data-view="users"><span class="ic">🔐</span>账号管理</a>
   </nav>
-  <div class="foot">V2.0</div>
+  <div class="foot">V2.1</div>
 </aside>
 
 <!-- 主区域 -->
@@ -2913,7 +2913,78 @@ function migrateCourses(arr){
     return c;
   });
 }
-function save(){localStorage.setItem(LS_KEY,JSON.stringify(DB));}
+/* ================= 云端同步（GitHub 仓库共享存储） ================= */
+const CLOUD_OWNER='v418050',CLOUD_REPO='campus-management-system',CLOUD_PATH='data.json';
+const CLOUD_TOKEN='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';
+const CLOUD_URL='https://api.github.com/repos/'+CLOUD_OWNER+'/'+CLOUD_REPO+'/contents/'+CLOUD_PATH;
+let CLOUD_SYNCING=false,CLOUD_SYNC_TIMER=null;
+function cloudHeaders(){return {Authorization:'token '+CLOUD_TOKEN,Accept:'application/vnd.github.v3+json'};}
+function b64ToUtf8(b64){return decodeURIComponent(escape(atob(b64.replace(/\s/g,''))));}
+function utf8ToB64(str){return btoa(unescape(encodeURIComponent(str)));}
+/* 按 id 合并本地与云端数组（本地优先），feed 按 text+time 去重 */
+function mergeDB(localD,remoteD){
+  const out={};
+  Object.keys(STORE).forEach(k=>{
+    const lv=localD[k],rv=remoteD[k];
+    if(!Array.isArray(lv)&&!Array.isArray(rv)){out[k]=(lv!==undefined)?lv:rv;return;}
+    const map=new Map();
+    (Array.isArray(rv)?rv:[]).forEach(x=>{if(x){const key=x.id||(x.text+'|'+(x.time||''));map.set(key,x);}});
+    (Array.isArray(lv)?lv:[]).forEach(x=>{if(x){const key=x.id||(x.text+'|'+(x.time||''));map.set(key,x);}});
+    out[k]=Array.from(map.values());
+  });
+  return out;
+}
+/* 推送：先拉云端最新 → 合并 → 写回，避免覆盖他人记录；照片仅存本地不同步 */
+function syncPush(){
+  if(CLOUD_SYNCING)return;
+  CLOUD_SYNCING=true;
+  const localData=JSON.parse(JSON.stringify(DB));
+  Object.keys(localData).forEach(k=>{
+    if(Array.isArray(localData[k]))localData[k].forEach(x=>{if(x&&x.photo)delete x.photo;});
+  });
+  fetch(CLOUD_URL,{headers:cloudHeaders()})
+    .then(r=>r.json())
+    .then(meta=>{
+      const sha=meta&&meta.sha?meta.sha:null;
+      let merged=localData;
+      if(meta&&meta.content){
+        try{
+          const remote=JSON.parse(b64ToUtf8(meta.content));
+          merged=mergeDB(localData,remote);
+          /* 内容无变化则跳过写回，避免无意义 commit */
+          if(JSON.stringify(merged)===JSON.stringify(remote)){CLOUD_SYNCING=false;return;}
+        }catch(e){}
+      }
+      const payload={message:'sync '+new Date().toISOString(),content:utf8ToB64(JSON.stringify(merged))};
+      if(sha)payload.sha=sha;
+      return fetch(CLOUD_URL,{method:'PUT',headers:cloudHeaders(),body:JSON.stringify(payload)});
+    })
+    .then(r=>{CLOUD_SYNCING=false;if(r&&!r.ok)console.warn('云端同步失败',r.status);})
+    .catch(e=>{CLOUD_SYNCING=false;console.warn('云端同步失败',e);});
+}
+/* 拉取：页面启动/视图切换时从云端拉取并合并到本地，拉取后自动回推本地独有数据 */
+function syncPull(cb){
+  fetch(CLOUD_URL,{headers:cloudHeaders()})
+    .then(r=>{if(!r.ok)throw new Error('no cloud data');return r.json();})
+    .then(meta=>{
+      if(!meta||!meta.content)throw new Error('no content');
+      try{
+        const remote=JSON.parse(b64ToUtf8(meta.content));
+        Object.assign(DB,mergeDB(DB,remote));
+        localStorage.setItem(LS_KEY,JSON.stringify(DB));
+        if(typeof renderAll==='function')renderAll();
+        if(CLOUD_SYNC_TIMER)clearTimeout(CLOUD_SYNC_TIMER);
+        CLOUD_SYNC_TIMER=setTimeout(syncPush,1500);
+      }catch(e){}
+      if(cb)cb();
+    })
+    .catch(()=>{if(cb)cb();});
+}
+function save(){
+  localStorage.setItem(LS_KEY,JSON.stringify(DB));
+  if(CLOUD_SYNC_TIMER)clearTimeout(CLOUD_SYNC_TIMER);
+  CLOUD_SYNC_TIMER=setTimeout(syncPush,1500);
+}
 /* 从 localStorage 重新读取最新数据合并到内存 DB（跨标签页同步） */
 function reloadDB(){try{const raw=localStorage.getItem(LS_KEY);if(raw){const d=JSON.parse(raw);Object.assign(DB,d);}}catch(e){}}
 function uid(p){return p+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
@@ -3832,7 +3903,7 @@ function openAttStats(){
   classFoot.innerHTML='<button class="btn primary" onclick="closeModal()">关闭</button>';
   showModal();
 }
-function openClassLogs(){
+function renderClassLogs(){
   reloadDB();
   const logs=(DB.classLogs||[]).slice().reverse();
   const kw=(document.getElementById('attSearch').value||'').toLowerCase();
@@ -3850,6 +3921,10 @@ function openClassLogs(){
   classBody.innerHTML=html;
   classFoot.innerHTML='<button class="btn primary" onclick="closeModal()">关闭</button>';
   showModal();
+}
+function openClassLogs(){
+  reloadDB();
+  syncPull(renderClassLogs);
 }
 
 /* ================= 宿舍 ================= */
@@ -4474,6 +4549,8 @@ function landingUserTeacherPunchSubmit(userId,couId){
 /* ================= 初始化 ================= */
 if(!DB)seed();
 renderAll();
+/* 从云端拉取最新共享数据（跨平台同步） */
+syncPull();
 if(restoreSession()){
   afterLogin();
 }else{
@@ -4482,6 +4559,8 @@ if(restoreSession()){
   showLoginPage();
 }
 landingInit();
+/* 页面关闭/隐藏前若有待同步数据立即推送（打卡后直接关页面也能同步） */
+window.addEventListener('pagehide',()=>{if(CLOUD_SYNC_TIMER){clearTimeout(CLOUD_SYNC_TIMER);CLOUD_SYNC_TIMER=null;syncPush();}});
 </script>
 </body>
 </html>
