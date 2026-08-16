@@ -283,7 +283,7 @@ table.timetable{border-collapse:separate;border-spacing:0;min-width:860px;width:
     <div class="group">系统</div>
     <a data-view="users"><span class="ic">🔐</span>账号管理</a>
   </nav>
-  <div class="foot">V2.1</div>
+  <div class="foot">V2.2</div>
 </aside>
 
 <!-- 主区域 -->
@@ -294,6 +294,7 @@ table.timetable{border-collapse:separate;border-spacing:0;min-width:860px;width:
       <div class="sub" id="pageSub">校园数据总览</div>
     </div>
     <div class="tools">
+      <button class="btn" onclick="openCloudSettings()" title="跨平台数据同步配置">☁️ 云同步</button>
       <button class="btn" onclick="exportData()">📤 导出数据</button>
       <button class="btn" onclick="importData()">📥 导入数据</button>
       <button class="btn danger" onclick="confirmReset()">重置演示数据</button>
@@ -2915,10 +2916,13 @@ function migrateCourses(arr){
 }
 /* ================= 云端同步（GitHub 仓库共享存储） ================= */
 const CLOUD_OWNER='v418050',CLOUD_REPO='campus-management-system',CLOUD_PATH='data.json';
-const CLOUD_TOKEN='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';
 const CLOUD_URL='https://api.github.com/repos/'+CLOUD_OWNER+'/'+CLOUD_REPO+'/contents/'+CLOUD_PATH;
+const CLOUD_TOKEN_KEY='campus_cloud_token_v1';
 let CLOUD_SYNCING=false,CLOUD_SYNC_TIMER=null;
-function cloudHeaders(){return {Authorization:'token '+CLOUD_TOKEN,Accept:'application/vnd.github.v3+json'};}
+/* Token 由管理员在「云同步设置」中填写，仅保存在本机浏览器，避免公开泄露被 GitHub 自动吊销 */
+function getCloudToken(){try{return localStorage.getItem(CLOUD_TOKEN_KEY)||'';}catch(e){return '';}}
+function saveCloudToken(t){try{localStorage.setItem(CLOUD_TOKEN_KEY,(t||'').trim());}catch(e){}}
+function cloudHeaders(){const t=getCloudToken();return {Authorization:'Bearer '+t,Accept:'application/vnd.github.v3+json'};}
 function b64ToUtf8(b64){return decodeURIComponent(escape(atob(b64.replace(/\s/g,''))));}
 function utf8ToB64(str){return btoa(unescape(encodeURIComponent(str)));}
 /* 按 id 合并本地与云端数组（本地优先），feed 按 text+time 去重 */
@@ -2937,13 +2941,14 @@ function mergeDB(localD,remoteD){
 /* 推送：先拉云端最新 → 合并 → 写回，避免覆盖他人记录；照片仅存本地不同步 */
 function syncPush(){
   if(CLOUD_SYNCING)return;
+  if(!getCloudToken()){return;}
   CLOUD_SYNCING=true;
   const localData=JSON.parse(JSON.stringify(DB));
   Object.keys(localData).forEach(k=>{
     if(Array.isArray(localData[k]))localData[k].forEach(x=>{if(x&&x.photo)delete x.photo;});
   });
   fetch(CLOUD_URL,{headers:cloudHeaders()})
-    .then(r=>r.json())
+    .then(r=>{if(r.status===401||r.status===403){throw new Error('cloud auth');}return r.json();})
     .then(meta=>{
       const sha=meta&&meta.sha?meta.sha:null;
       let merged=localData;
@@ -2960,10 +2965,11 @@ function syncPush(){
       return fetch(CLOUD_URL,{method:'PUT',headers:cloudHeaders(),body:JSON.stringify(payload)});
     })
     .then(r=>{CLOUD_SYNCING=false;if(r&&!r.ok)console.warn('云端同步失败',r.status);})
-    .catch(e=>{CLOUD_SYNCING=false;console.warn('云端同步失败',e);});
+    .catch(e=>{CLOUD_SYNCING=false;if(e&&e.message==='cloud auth')console.warn('云同步 Token 无效或已被吊销，请在设置中重新配置');else console.warn('云端同步失败',e);});
 }
 /* 拉取：页面启动/视图切换时从云端拉取并合并到本地，拉取后自动回推本地独有数据 */
 function syncPull(cb){
+  if(!getCloudToken()){if(cb)cb();return;}
   fetch(CLOUD_URL,{headers:cloudHeaders()})
     .then(r=>{if(!r.ok)throw new Error('no cloud data');return r.json();})
     .then(meta=>{
@@ -4008,6 +4014,73 @@ function confirm(msg,fn){
 }
 function doConfirm(){closeModal();if(_confirmFn)_confirmFn();_confirmFn=null;}
 function openTitle(t){classTitle.textContent=t;}
+
+/* ================= 云同步设置 ================= */
+function openCloudSettings(){
+  const has=getCloudToken()?true:false;
+  const cur=getCloudToken();
+  classTitle.textContent='☁️ 云同步设置';
+  classBody.innerHTML=`
+    <div style="font-size:13px;color:var(--gray-500);line-height:1.7;margin-bottom:14px">
+      跨平台同步：填写 GitHub Token 后，本系统会在 <b>GitHub 仓库</b>（v418050/campus-management-system/data.json）中读写共享数据，
+      使微信、Chrome、Safari 等不同平台浏览器看到的记录一致。照片仅保存在本机，不同步到云端。
+    </div>
+    <div style="font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:6px">GitHub Token（仅保存在本机浏览器，不会上传）</div>
+    <input id="cloudTokenInput" type="password" style="width:100%;padding:10px 12px;border:1px solid var(--gray-200);border-radius:8px;font-size:14px;box-sizing:border-box" placeholder="粘贴 GitHub Token（github_pat_… 或 ghp_…）">
+    <div style="font-size:12px;color:var(--gray-400);margin-top:8px;line-height:1.6">
+      获取方式：GitHub → Settings → Developer settings → Fine-grained tokens → Generate new token，仓库仅勾选 campus-management-system 的 Contents 读写权限。
+      建议选择「永不过期」。Token 由各设备的浏览器自行保存，不会出现在网页代码中，因此不会被 GitHub 自动吊销。
+    </div>
+    <div id="cloudTokenStatus" style="font-size:12px;color:var(--gray-500);margin-top:10px"></div>`;
+  const input=document.getElementById('cloudTokenInput');
+  input.value=cur;
+  input.addEventListener('input',()=>{
+    const s=document.getElementById('cloudTokenStatus');
+    if(s)s.textContent='';
+  });
+  const st=document.getElementById('cloudTokenStatus');
+  if(st)st.innerHTML=has?'<span style="color:#059669">✓ 已配置 Token（'+maskToken(cur)+'）</span>':'<span style="color:#d97706">⚠ 未配置 Token，当前仅本机存储</span>';
+  classFoot.innerHTML=`<button class="btn" onclick="testCloudToken()" id="cloudTestBtn">测试连接</button><button class="btn primary" onclick="saveCloudTokenBtn()">保存</button><button class="btn" onclick="closeModal()">取消</button>`;
+  showModal();
+}
+function maskToken(t){if(!t)return '';return t.length>10?t.slice(0,6)+'…'+t.slice(-4):'已保存';}
+function saveCloudTokenBtn(){
+  const input=document.getElementById('cloudTokenInput');
+  const v=(input&&input.value?input.value.trim():'');
+  saveCloudToken(v);
+  closeModal();
+  if(v){
+    toast('云同步 Token 已保存');
+    syncPull();
+  }else{
+    toast('已清除云同步 Token');
+  }
+}
+function testCloudToken(){
+  const input=document.getElementById('cloudTokenInput');
+  const v=(input&&input.value?input.value.trim():'');
+  const st=document.getElementById('cloudTokenStatus');
+  const btn=document.getElementById('cloudTestBtn');
+  if(!v){if(st)st.innerHTML='<span style="color:#d97706">请先输入 Token</span>';return;}
+  if(btn)btn.disabled=true;
+  if(st)st.innerHTML='<span style="color:var(--gray-500)">正在测试连接…</span>';
+  fetch(CLOUD_URL,{headers:{Authorization:'Bearer '+v,Accept:'application/vnd.github.v3+json'}})
+    .then(r=>{
+      if(r.ok){
+        if(st)st.innerHTML='<span style="color:#059669">✓ 连接成功，Token 有效</span>';
+        return r.json();
+      }else if(r.status===401||r.status===403){
+        if(st)st.innerHTML='<span style="color:#dc2626">✕ 连接失败：Token 无效或已被吊销</span>';
+      }else if(r.status===404){
+        if(st)st.innerHTML='<span style="color:#d97706">⚠ Token 有效，但云端数据尚未创建（首次保存后自动创建）</span>';
+        return r.json();
+      }else{
+        if(st)st.innerHTML='<span style="color:#d97706">⚠ 连接异常（HTTP '+r.status+'），Token 可能缺少权限</span>';
+      }
+    })
+    .catch(()=>{if(st)st.innerHTML='<span style="color:#dc2626">✕ 网络异常，无法连接 GitHub</span>';})
+    .finally(()=>{if(btn)btn.disabled=false;});
+}
 
 /* ================= 仪表盘 ================= */
 function renderDashboard(){
