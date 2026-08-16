@@ -283,7 +283,7 @@ table.timetable{border-collapse:separate;border-spacing:0;min-width:860px;width:
     <div class="group">系统</div>
     <a data-view="users"><span class="ic">🔐</span>账号管理</a>
   </nav>
-  <div class="foot">数据保存在本地浏览器<br>V1.0 · 纯本地运行</div>
+  <div class="foot">V2.0</div>
 </aside>
 
 <!-- 主区域 -->
@@ -2914,6 +2914,8 @@ function migrateCourses(arr){
   });
 }
 function save(){localStorage.setItem(LS_KEY,JSON.stringify(DB));}
+/* 从 localStorage 重新读取最新数据合并到内存 DB（跨标签页同步） */
+function reloadDB(){try{const raw=localStorage.getItem(LS_KEY);if(raw){const d=JSON.parse(raw);Object.assign(DB,d);}}catch(e){}}
 function uid(p){return p+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 /* ================= 账号体系 ================= */
@@ -3831,6 +3833,7 @@ function openAttStats(){
   showModal();
 }
 function openClassLogs(){
+  reloadDB();
   const logs=(DB.classLogs||[]).slice().reverse();
   const kw=(document.getElementById('attSearch').value||'').toLowerCase();
   const list=kw?logs.filter(l=>(l.courseName||'').toLowerCase().includes(kw)||(l.teacherName||'').toLowerCase().includes(kw)||(classById(l.classId).name||'').toLowerCase().includes(kw)):logs;
@@ -4116,7 +4119,7 @@ function landingHide(){
   document.querySelector('.sidebar').style.display='';
   document.querySelector('.main').style.display='';
 }
-function landingExit(){location.hash='';landingHide();if(CURRENT_USER)afterLogin();else showLoginPage();}
+function landingExit(){location.hash='';landingHide();reloadDB();if(CURRENT_USER)afterLogin();else showLoginPage();}
 function parseLandingHash(){
   const h=location.hash||'';
   let m=h.match(/^#\/u\/([^\/]+)$/);
