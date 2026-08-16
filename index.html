@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate">
 <title>校园管理系统</title>
 <style>
 :root{
@@ -283,7 +284,7 @@ table.timetable{border-collapse:separate;border-spacing:0;min-width:860px;width:
     <div class="group">系统</div>
     <a data-view="users"><span class="ic">🔐</span>账号管理</a>
   </nav>
-  <div class="foot">V2.3</div>
+  <div class="foot">V2.4</div>
 </aside>
 
 <!-- 主区域 -->
@@ -2914,27 +2915,30 @@ function migrateCourses(arr){
     return c;
   });
 }
-/* ================= 云端同步（GitHub 仓库共享存储） ================= */
+/* ================= 云端同步（GitHub 仓库共享存储）V2.4 ================= */
 const CLOUD_OWNER='v418050',CLOUD_REPO='campus-management-system',CLOUD_PATH='data.json';
 const CLOUD_URL='https://api.github.com/repos/'+CLOUD_OWNER+'/'+CLOUD_REPO+'/contents/'+CLOUD_PATH;
 const CLOUD_TOKEN_KEY='campus_cloud_token_v1';
-let CLOUD_SYNCING=false,CLOUD_SYNC_TIMER=null;
+let CLOUD_SYNCING=false,CLOUD_SYNC_TIMER=null,CLOUD_PULL_FAILED=false;
 /* Token 由管理员在「云同步设置」中填写，仅保存在本机浏览器，避免公开泄露被 GitHub 自动吊销 */
 function getCloudToken(){try{return localStorage.getItem(CLOUD_TOKEN_KEY)||'';}catch(e){return '';}}
 function saveCloudToken(t){try{localStorage.setItem(CLOUD_TOKEN_KEY,(t||'').trim());}catch(e){}}
+/* #1 修复：readOnly=true 时绝不带 Token，避免无效 Token 致 401 拉取失败 */
 function cloudHeaders(readOnly){
-  const t=getCloudToken();
   const h={Accept:'application/vnd.github.v3+json'};
-  if(!readOnly&&t)h.Authorization='Bearer '+t; // 写操作需要Token，读操作公开仓库无需Token
-  else if(readOnly&&t)h.Authorization='Bearer '+t; // 有Token时带上以提高速率限制
+  if(readOnly) return h; // 公开仓库读不需要 Token
+  const t=getCloudToken();
+  if(t) h.Authorization='Bearer '+t;
   return h;
 }
-function b64ToUtf8(b64){return decodeURIComponent(escape(atob(b64.replace(/\s/g,''))));}
+function b64ToUtf8(b64){try{return decodeURIComponent(escape(atob(b64.replace(/\s/g,''))))}catch(e){return ''}}
 function utf8ToB64(str){return btoa(unescape(encodeURIComponent(str)));}
-/* 按 id 合并本地与云端数组（本地优先），feed 按 text+time 去重 */
+/* #3 #11 #12 修复：mergeDB 不同步 users（含密码），不同步 feed（仅本地有意义） */
+/* #13 修复：给无 id 的 feed 记录生成稳定 key */
+const CLOUD_SYNC_KEYS=['classLogs','attendance','students','teachers','classes','courses','dormitories','scores']; // 需要跨设备同步的数组字段
 function mergeDB(localD,remoteD){
   const out={};
-  Object.keys(STORE).forEach(k=>{
+  CLOUD_SYNC_KEYS.forEach(k=>{
     const lv=localD[k],rv=remoteD[k];
     if(!Array.isArray(lv)&&!Array.isArray(rv)){out[k]=(lv!==undefined)?lv:rv;return;}
     const map=new Map();
@@ -2944,16 +2948,28 @@ function mergeDB(localD,remoteD){
   });
   return out;
 }
-/* 推送：先拉云端最新 → 合并 → 写回，避免覆盖他人记录；照片仅存本地不同步 */
-function syncPush(){
+/* #4 #5 修复：打卡后立即同步（不等防抖），确保数据上云 */
+function syncPushNow(){
+  if(!getCloudToken()){return;}
+  if(CLOUD_SYNC_TIMER){clearTimeout(CLOUD_SYNC_TIMER);CLOUD_SYNC_TIMER=null;}
+  syncPush();
+}
+/* #6 修复：syncPush 加超时锁，#8 修复：409 自动重试，#2 修复：parse 失败中止推送，#11 修复：移除 users */
+function syncPush(retry){
   if(CLOUD_SYNCING)return;
   if(!getCloudToken()){return;}
   CLOUD_SYNCING=true;
+  const retries=retry||0;
+  const ctrl=new AbortController();
+  const timer=setTimeout(()=>{ctrl.abort();CLOUD_SYNCING=false;},15000); // #6: 15秒超时
+  /* #11: 推送前移除 users（含密码）和 photo */
   const localData=JSON.parse(JSON.stringify(DB));
+  delete localData.users; // 不同步账号体系，含密码
+  delete localData.feed;  // feed 仅本地
   Object.keys(localData).forEach(k=>{
     if(Array.isArray(localData[k]))localData[k].forEach(x=>{if(x&&x.photo)delete x.photo;});
   });
-  fetch(CLOUD_URL,{headers:cloudHeaders()})
+  fetch(CLOUD_URL,{headers:cloudHeaders(),signal:ctrl.signal})
     .then(r=>{if(r.status===401||r.status===403){throw new Error('cloud auth');}return r.json();})
     .then(meta=>{
       const sha=meta&&meta.sha?meta.sha:null;
@@ -2962,44 +2978,59 @@ function syncPush(){
         try{
           const remote=JSON.parse(b64ToUtf8(meta.content));
           merged=mergeDB(localData,remote);
-          /* 内容无变化则跳过写回，避免无意义 commit */
           if(JSON.stringify(merged)===JSON.stringify(remote)){CLOUD_SYNCING=false;return;}
-        }catch(e){}
+        }catch(e){CLOUD_SYNCING=false;return;} // #2: parse 失败中止，不覆盖
       }
       const payload={message:'sync '+new Date().toISOString(),content:utf8ToB64(JSON.stringify(merged))};
       if(sha)payload.sha=sha;
-      return fetch(CLOUD_URL,{method:'PUT',headers:cloudHeaders(),body:JSON.stringify(payload)});
+      return fetch(CLOUD_URL,{method:'PUT',headers:cloudHeaders(),body:JSON.stringify(payload),signal:ctrl.signal});
     })
-    .then(r=>{CLOUD_SYNCING=false;if(r&&!r.ok)console.warn('云端同步失败',r.status);})
-    .catch(e=>{CLOUD_SYNCING=false;if(e&&e.message==='cloud auth')console.warn('云同步 Token 无效或已被吊销，请在设置中重新配置');else console.warn('云端同步失败',e);});
+    .then(r=>{
+      clearTimeout(timer);CLOUD_SYNCING=false;
+      if(r&&r.status===409&&retries<3){setTimeout(()=>syncPush(retries+1),800);} // #8: 409 重试
+      else if(r&&!r.ok)console.warn('云端同步失败',r.status);
+    })
+    .catch(e=>{
+      clearTimeout(timer);CLOUD_SYNCING=false;
+      if(e&&e.message==='cloud auth')console.warn('云同步 Token 无效或已被吊销，请在设置中重新配置');
+      else if(e&&e.name!=='AbortError')console.warn('云端同步失败',e);
+    });
 }
-/* 拉取：页面启动/视图切换时从云端拉取并合并到本地（公开仓库无需Token即可GET），拉取后若本地有独有数据且有Token则回推 */
+/* #1 修复：syncPull 不带 Token；#7 修复：失败有标记；#9 修复：不 renderAll；#14 修复：pageshow 兜底 */
 function syncPull(cb){
-  fetch(CLOUD_URL,{headers:cloudHeaders(true)})
-    .then(r=>{if(!r.ok)throw new Error('no cloud data');return r.json();})
+  CLOUD_PULL_FAILED=false;
+  fetch(CLOUD_URL,{headers:cloudHeaders(true)}) // #1: readOnly=true 绝不带 Token
+    .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
     .then(meta=>{
       if(!meta||!meta.content)throw new Error('no content');
       try{
         const remote=JSON.parse(b64ToUtf8(meta.content));
+        if(!remote){throw new Error('parse failed');}
         Object.assign(DB,mergeDB(DB,remote));
         localStorage.setItem(LS_KEY,JSON.stringify(DB));
-        if(typeof renderAll==='function')renderAll();
-        /* 只有配了Token才回推（写操作需要认证） */
+        /* #9: 只刷新当前活动视图，不 renderAll */
+        const av=document.querySelector('.view.active');
+        if(av){const vn=av.id.replace('view-','');if(typeof go==='function')go(vn);}
+        /* 有 Token 才回推 */
         if(getCloudToken()){
           if(CLOUD_SYNC_TIMER)clearTimeout(CLOUD_SYNC_TIMER);
           CLOUD_SYNC_TIMER=setTimeout(syncPush,1500);
         }
-      }catch(e){}
+      }catch(e){console.warn('云同步合并失败',e);}
       if(cb)cb();
     })
-    .catch(()=>{if(cb)cb();});
+    .catch(e=>{
+      CLOUD_PULL_FAILED=true;
+      console.warn('云端数据拉取失败',e);
+      if(cb)cb();
+    });
 }
+/* #5 修复：save 保留防抖但缩短到 500ms，打卡后调 syncPushNow 即时推送 */
 function save(){
   localStorage.setItem(LS_KEY,JSON.stringify(DB));
-  /* 有Token时才防抖推云端 */
   if(getCloudToken()){
     if(CLOUD_SYNC_TIMER)clearTimeout(CLOUD_SYNC_TIMER);
-    CLOUD_SYNC_TIMER=setTimeout(syncPush,1500);
+    CLOUD_SYNC_TIMER=setTimeout(syncPush,500);
   }
 }
 /* 从 localStorage 重新读取最新数据合并到内存 DB（跨标签页同步） */
@@ -3941,7 +3972,8 @@ function renderClassLogs(){
 }
 function openClassLogs(){
   reloadDB();
-  syncPull(renderClassLogs);
+  renderClassLogs();  // 先展示本地数据
+  syncPull(renderClassLogs);  // 网络回来后刷新
 }
 
 /* ================= 宿舍 ================= */
@@ -4554,6 +4586,7 @@ function landingStudentSign(sid){
   if(LANDING_STU_LOC)rec.location=LANDING_STU_LOC;
   DB.attendance.push(rec);
   save();addFeed(`学生扫码签到：${s.name}`,'green');
+  syncPushNow(); // 签到后立即推送云端
   landingStudentShow(sid);
 }
 
@@ -4619,6 +4652,7 @@ function landingUserTeacherPunchSubmit(userId,couId){
   DB.classLogs.push(rec);
   if(DB.classLogs.length>500)DB.classLogs=DB.classLogs.slice(-500);
   save();addFeed(`教师打卡上课：${cou.name}`,'blue');
+  syncPushNow(); // 打卡后立即推送云端
   const lc=document.getElementById('landingCard');
   lc.innerHTML=`
     <div class="l-logo" style="background:linear-gradient(135deg,#059669,#10b981)"><div class="ok">✓</div></div>
@@ -4642,7 +4676,9 @@ if(restoreSession()){
   showLoginPage();
 }
 landingInit();
-/* 页面关闭/隐藏前若有待同步数据立即推送（打卡后直接关页面也能同步） */
+/* #14: 微信 BFCache 恢复时重新拉取云端 */
+window.addEventListener('pageshow',(e)=>{if(e.persisted){syncPull();}});
+/* 页面关闭/隐藏前若有待同步数据立即推送 */
 window.addEventListener('pagehide',()=>{if(CLOUD_SYNC_TIMER){clearTimeout(CLOUD_SYNC_TIMER);CLOUD_SYNC_TIMER=null;syncPush();}});
 </script>
 </body>
