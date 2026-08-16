@@ -1,0 +1,4484 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>校园管理系统</title>
+<style>
+:root{
+  --primary:#2563eb; --primary-dark:#1d4ed8; --primary-light:#eff6ff;
+  --success:#059669; --success-light:#ecfdf5;
+  --warning:#d97706; --warning-light:#fffbeb;
+  --danger:#dc2626; --danger-light:#fef2f2;
+  --gray-50:#f8fafc; --gray-100:#f1f5f9; --gray-200:#e2e8f0;
+  --gray-400:#94a3b8; --gray-500:#64748b; --gray-600:#475569; --gray-700:#334155; --gray-800:#1e293b;
+  --radius:10px; --shadow:0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.05);
+  --sidebar-w:230px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--gray-100);color:var(--gray-800);font-size:14px;display:flex;min-height:100vh;}
+/* ===== 侧边栏 ===== */
+.sidebar{width:var(--sidebar-w);background:#0f172a;color:#cbd5e1;display:flex;flex-direction:column;position:fixed;top:0;bottom:0;left:0;z-index:50;}
+.sidebar .logo{display:flex;align-items:center;gap:10px;padding:20px 18px;border-bottom:1px solid rgba(255,255,255,.08);}
+.sidebar .logo .icon{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#2563eb);display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;flex-shrink:0;}
+.sidebar .logo .t{color:#fff;font-size:16px;font-weight:700;letter-spacing:1px;}
+.sidebar .logo .s{font-size:11px;color:#64748b;margin-top:2px;}
+.nav{flex:1;padding:12px 10px;overflow-y:auto;}
+.nav .group{font-size:11px;color:#475569;padding:10px 10px 6px;letter-spacing:1px;}
+.nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:#94a3b8;text-decoration:none;cursor:pointer;margin-bottom:2px;transition:all .15s;font-size:13.5px;}
+.nav a:hover{background:rgba(255,255,255,.06);color:#e2e8f0;}
+.nav a.active{background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.4);}
+.nav a .ic{width:20px;text-align:center;font-size:15px;}
+.sidebar .foot{padding:14px 18px;font-size:11px;color:#475569;border-top:1px solid rgba(255,255,255,.06);line-height:1.7;}
+/* ===== 主区域 ===== */
+.main{flex:1;margin-left:var(--sidebar-w);display:flex;flex-direction:column;min-height:100vh;}
+.topbar{background:#fff;border-bottom:1px solid var(--gray-200);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:40;}
+.topbar h1{font-size:19px;font-weight:700;color:var(--gray-800);}
+.topbar .sub{font-size:12px;color:var(--gray-500);margin-top:2px;}
+.topbar .tools{display:flex;gap:10px;align-items:center;}
+.content{padding:24px 28px;flex:1;}
+.view{display:none;}
+.view.active{display:block;animation:fadeIn .25s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+/* ===== 通用组件 ===== */
+.card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-bottom:18px;}
+.card .card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.card .card-h h3{font-size:15px;font-weight:600;color:var(--gray-700);}
+.card .card-h .desc{font-size:12px;color:var(--gray-400);}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;border:1px solid var(--gray-200);background:#fff;color:var(--gray-600);font-size:13px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.btn:hover{border-color:var(--primary);color:var(--primary);}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff;}
+.btn.primary:hover{background:var(--primary-dark);}
+.btn.success{background:var(--success);border-color:var(--success);color:#fff;}
+.btn.success:hover{filter:brightness(.95);}
+.btn.danger{background:#fff;border-color:#fca5a5;color:var(--danger);}
+.btn.danger:hover{background:var(--danger);color:#fff;}
+.btn.sm{padding:4px 10px;font-size:12px;border-radius:6px;}
+.btn.sm.danger{color:var(--danger);border-color:var(--gray-200);}
+.btn.sm.danger:hover{background:var(--danger-light);}
+.btn.sm.edit:hover{background:var(--primary-light);border-color:var(--primary);color:var(--primary);}
+input,select,textarea{font-family:inherit;font-size:13px;padding:8px 12px;border:1px solid var(--gray-200);border-radius:8px;outline:none;background:#fff;color:var(--gray-700);transition:border .15s, box-shadow .15s;width:100%;}
+input:focus,select:focus,textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.12);}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;align-items:center;}
+.toolbar .search{flex:1;min-width:180px;max-width:320px;}
+.toolbar .right{margin-left:auto;display:flex;gap:10px;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;padding:10px 12px;background:var(--gray-50);color:var(--gray-500);font-weight:600;font-size:12px;border-bottom:1px solid var(--gray-200);white-space:nowrap;}
+td{padding:10px 12px;border-bottom:1px solid var(--gray-100);color:var(--gray-700);}
+tbody tr:hover{background:var(--gray-50);}
+.table-wrap{overflow-x:auto;}
+.tag{display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;line-height:20px;}
+.tag.blue{background:var(--primary-light);color:var(--primary);}
+.tag.green{background:var(--success-light);color:var(--success);}
+.tag.orange{background:var(--warning-light);color:var(--warning);}
+.tag.red{background:var(--danger-light);color:var(--danger);}
+.tag.gray{background:var(--gray-100);color:var(--gray-500);}
+.empty{text-align:center;padding:48px 0;color:var(--gray-400);font-size:13px;}
+.empty .ic{font-size:34px;display:block;margin-bottom:10px;opacity:.5;}
+.actions{display:flex;gap:6px;justify-content:flex-end;}
+/* ===== 统计卡片 ===== */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px;}
+.stat{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:transform .15s, box-shadow .15s;border-left:4px solid transparent;}
+.stat:hover{transform:translateY(-2px);box-shadow:0 4px 20px rgba(0,0,0,.1);}
+.stat .ic{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.stat .num{font-size:24px;font-weight:700;color:var(--gray-800);line-height:1.2;}
+.stat .label{font-size:12px;color:var(--gray-500);}
+.stat.c1{border-left-color:#2563eb;} .stat.c1 .ic{background:var(--primary-light);}
+.stat.c2{border-left-color:#059669;} .stat.c2 .ic{background:var(--success-light);}
+.stat.c3{border-left-color:#d97706;} .stat.c3 .ic{background:var(--warning-light);}
+.stat.c4{border-left-color:#7c3aed;} .stat.c4 .ic{background:#f5f3ff;}
+.stat.c5{border-left-color:#db2777;} .stat.c5 .ic{background:#fdf2f8;}
+.stat.c6{border-left-color:#0891b2;} .stat.c6 .ic{background:#ecfeff;}
+/* ===== 模态框 ===== */
+.modal-mask{position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(2px);z-index:200;display:none;align-items:center;justify-content:center;}
+.modal-mask.show{display:flex;}
+.modal{background:#fff;border-radius:14px;width:560px;max-width:calc(100vw - 40px);max-height:calc(100vh - 60px);overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:pop .2s ease;}
+@keyframes pop{from{opacity:0;transform:scale(.96);}to{opacity:1;transform:scale(1);}}
+.modal-h{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--gray-100);position:sticky;top:0;background:#fff;z-index:2;}
+.modal-h h3{font-size:16px;font-weight:600;}
+.modal-h .x{cursor:pointer;color:var(--gray-400);font-size:20px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:6px;}
+.modal-h .x:hover{background:var(--gray-100);color:var(--gray-600);}
+.modal-b{padding:20px 22px;}
+.tbl{width:100%;border-collapse:collapse;font-size:13px;}
+.tbl th{background:var(--gray-50);color:var(--gray-500);font-weight:600;text-align:left;padding:9px 12px;border-bottom:1px solid var(--gray-100);position:sticky;top:0;}
+.tbl td{padding:9px 12px;border-bottom:1px solid var(--gray-50);color:var(--gray-700);}
+.tbl tr:hover td{background:var(--gray-50);}
+.modal-f{padding:14px 22px;border-top:1px solid var(--gray-100);display:flex;justify-content:flex-end;gap:10px;position:sticky;bottom:0;background:#fff;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-item label{display:block;font-size:12px;color:var(--gray-500);margin-bottom:6px;font-weight:500;}
+.form-item.full{grid-column:1/-1;}
+.form-item .req{color:var(--danger);margin-left:2px;}
+/* ===== 确认弹窗 ===== */
+.confirm{width:400px;}
+.confirm .msg{padding:6px 0 4px;color:var(--gray-600);font-size:14px;line-height:1.7;}
+/* ===== 仪表盘布局 ===== */
+.dash-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;}
+.dash-grid .col{min-width:0;}
+@media(max-width:1100px){.dash-grid{grid-template-columns:1fr;}}
+.mini-stat{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px dashed var(--gray-100);font-size:13px;}
+.mini-stat:last-child{border-bottom:none;}
+.mini-stat .k{color:var(--gray-500);}
+.mini-stat .v{font-weight:600;color:var(--gray-700);}
+.bar{height:8px;background:var(--gray-100);border-radius:20px;overflow:hidden;margin-top:6px;}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#3b82f6,#2563eb);border-radius:20px;transition:width .6s ease;}
+.list-timeline{max-height:380px;overflow-y:auto;}
+.tl{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--gray-50);}
+.tl:last-child{border-bottom:none;}
+.tl .dot{width:8px;height:8px;border-radius:50%;margin-top:6px;flex-shrink:0;}
+.tl .t{font-size:13px;color:var(--gray-600);}
+.tl .d{font-size:11px;color:var(--gray-400);margin-top:2px;}
+.dot.blue{background:var(--primary);} .dot.green{background:var(--success);} .dot.orange{background:var(--warning);} .dot.red{background:var(--danger);}
+/* 表格单元格操作列 */
+.td-name{font-weight:600;color:var(--gray-700);}
+.td-sub{font-size:11px;color:var(--gray-400);}
+/* 打印/导出隐藏 */
+.hidden{display:none!important;}
+/* ===== 课表 ===== */
+.timetable-wrap{overflow-x:auto;}
+table.timetable{border-collapse:separate;border-spacing:0;min-width:860px;width:100%;}
+.timetable th,.timetable td{border:1px solid var(--gray-200);padding:8px 6px;text-align:center;vertical-align:top;width:14%;}
+.timetable th{background:var(--gray-50);color:var(--gray-500);font-weight:600;font-size:12px;white-space:nowrap;}
+.timetable td.period{width:9%;background:var(--gray-50);color:var(--gray-500);font-size:12px;font-weight:600;white-space:nowrap;}
+.timetable td.empty{color:var(--gray-300);font-size:12px;}
+.tt-cell{background:var(--primary-light);border-radius:8px;padding:6px 4px;font-size:12px;line-height:1.5;min-height:52px;display:flex;flex-direction:column;justify-content:center;cursor:pointer;transition:transform .12s, box-shadow .12s;box-shadow:0 1px 2px rgba(37,99,235,.1);}
+.tt-cell:hover{transform:scale(1.03);box-shadow:0 4px 12px rgba(37,99,235,.18);}
+.tt-cell .tname{font-weight:600;color:var(--primary);}
+.tt-cell .tinfo{color:var(--gray-600);font-size:11px;margin-top:2px;}
+.tt-cell .troom{color:var(--gray-400);font-size:10px;margin-top:1px;}
+.tt-cell.conflict{background:var(--danger-light);}
+.tt-cell.conflict .tname{color:var(--danger);}
+/* 弹窗内课表：自适应宽度 */
+.modal .timetable{min-width:0;font-size:11px;}
+.modal .timetable th,.modal .timetable td{padding:4px 2px;font-size:11px;}
+.modal .timetable td.period{font-size:10px;}
+.modal .tt-cell{min-height:40px;padding:4px 2px;font-size:10px;}
+.modal .tt-cell .tinfo,.modal .tt-cell .troom{font-size:9px;}
+.modal .table-wrap{overflow-x:auto;}
+.tt-legend{display:flex;gap:16px;align-items:center;margin-top:12px;font-size:12px;color:var(--gray-500);}
+.tt-legend .dot{width:10px;height:10px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:middle;}
+.tt-person{display:flex;align-items:center;gap:10px;}
+.tt-person .av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;flex-shrink:0;}
+.tt-person .info .n{font-size:16px;font-weight:700;color:var(--gray-800);}
+.tt-person .info .d{font-size:12px;color:var(--gray-500);margin-top:2px;}
+.tt-stat{display:flex;gap:24px;margin-left:auto;font-size:13px;}
+.tt-stat .it{text-align:center;}
+.tt-stat .it .v{font-size:20px;font-weight:700;color:var(--primary);}
+.tt-stat .it .l{font-size:11px;color:var(--gray-400);}
+@media(max-width:900px){.timetable th,.timetable td{font-size:11px;}}
+/* ===== 班级二维码 ===== */
+.qr-box{display:flex;flex-direction:column;align-items:center;gap:14px;padding:10px 0;}
+.qr-box .qr-canvas{background:#fff;padding:14px;border:1px solid var(--gray-200);border-radius:12px;display:inline-block;}
+.qr-box .qr-canvas img{display:block;width:220px;height:220px;image-rendering:pixelated;}
+.qr-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+.qr-hint{font-size:12px;color:var(--gray-400);text-align:center;line-height:1.7;max-width:420px;}
+/* ===== 扫码落地页 ===== */
+.landing{max-width:520px;margin:0 auto;padding:24px 0;width:100%;flex:1;display:flex;align-items:flex-start;justify-content:center;}
+.landing .lc{background:#fff;border-radius:14px;box-shadow:var(--shadow);padding:28px 26px;text-align:center;}
+.landing .l-logo{width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-size:26px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;}
+.landing .l-title{font-size:20px;font-weight:700;color:var(--gray-800);}
+.landing .l-sub{font-size:13px;color:var(--gray-500);margin-top:4px;}
+.landing .l-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px;}
+.landing .role-btn{border:1.5px solid var(--gray-200);border-radius:12px;padding:16px 12px;cursor:pointer;transition:all .15s;background:#fff;text-align:center;}
+.landing .role-btn:hover{border-color:var(--primary);box-shadow:0 4px 14px rgba(37,99,235,.15);}
+.landing .role-btn .r-ic{font-size:30px;}
+.landing .role-btn .r-t{font-weight:600;color:var(--gray-700);margin-top:8px;font-size:15px;}
+.landing .role-btn .r-d{font-size:11px;color:var(--gray-400);margin-top:4px;line-height:1.5;}
+.landing .l-back{display:block;margin:18px auto 0;color:var(--gray-400);font-size:13px;cursor:pointer;background:none;border:none;}
+.landing .l-tip{font-size:12px;color:var(--gray-400);margin-top:18px;line-height:1.8;}
+.landing .ok{display:inline-block;width:46px;height:46px;border-radius:50%;background:var(--success-light);color:var(--success);font-size:24px;line-height:46px;margin-bottom:8px;}
+.landing .warn{display:inline-block;width:46px;height:46px;border-radius:50%;background:var(--warning-light);color:var(--warning);font-size:24px;line-height:46px;margin-bottom:8px;}
+.landing .l-msg{font-size:16px;font-weight:600;color:var(--gray-800);}
+.landing .l-detail{font-size:13px;color:var(--gray-500);margin-top:8px;line-height:1.8;}
+.landing .l-btn{margin-top:20px;}
+.landing .l-login-input{width:100%;box-sizing:border-box;margin-top:16px;}
+.landing .l-photo-box{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:16px;flex-wrap:wrap;}
+.landing .l-photo-thumb{width:150px;height:112px;object-fit:cover;border-radius:10px;border:1px solid var(--gray-200);background:var(--gray-100);display:flex;align-items:center;justify-content:center;color:var(--gray-400);font-size:12px;overflow:hidden;}
+.landing .l-photo-thumb img{width:100%;height:100%;object-fit:cover;}
+.landing .l-loc-box{margin-top:14px;font-size:12px;color:var(--gray-500);line-height:1.9;background:var(--gray-50);border-radius:10px;padding:10px 12px;text-align:left;}
+.landing .l-loc-box .loc-name{font-weight:600;color:var(--gray-700);}
+.landing .l-step{font-size:12px;color:var(--gray-400);margin-top:10px;line-height:1.8;}
+/* ===== 登录页 ===== */
+.login-page{position:fixed;inset:0;z-index:200;background:linear-gradient(135deg,#0f172a,#1e3a8a);display:flex;align-items:center;justify-content:center;}
+.login-card{background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.3);padding:36px 34px;width:380px;max-width:calc(100vw - 40px);}
+.login-card .logo{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-size:26px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
+.login-card h2{text-align:center;font-size:20px;font-weight:700;color:var(--gray-800);}
+.login-card .sub{text-align:center;font-size:12px;color:var(--gray-400);margin:6px 0 24px;}
+.login-card .form-item{margin-bottom:14px;}
+.login-card label{display:block;font-size:12px;color:var(--gray-500);margin-bottom:6px;font-weight:500;}
+.login-card input{padding:10px 12px;}
+.login-card .btn{width:100%;justify-content:center;padding:10px;font-size:14px;margin-top:6px;}
+.login-card .login-tip{font-size:11px;color:var(--gray-400);text-align:center;margin-top:16px;line-height:1.8;}
+.login-card .login-err{font-size:12px;color:var(--danger);text-align:center;margin-top:10px;min-height:16px;}
+/* ===== 工作台 ===== */
+.portal{display:none;padding:24px 28px;}
+.portal.active{display:block;animation:fadeIn .25s ease;}
+.portal-head{display:flex;align-items:center;gap:16px;margin-bottom:24px;}
+.portal-head .av{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;flex-shrink:0;}
+.portal-head .info .n{font-size:20px;font-weight:700;color:var(--gray-800);}
+.portal-head .info .d{font-size:13px;color:var(--gray-500);margin-top:4px;}
+.portal-head .tools{margin-left:auto;display:flex;gap:10px;}
+.portal-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:20px;}
+.portal-card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;}
+.portal-card .pc-ic{font-size:26px;}
+.portal-card .pc-v{font-size:24px;font-weight:700;color:var(--gray-800);margin-top:8px;}
+.portal-card .pc-l{font-size:12px;color:var(--gray-400);margin-top:2px;}
+.portal-section{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-bottom:18px;}
+.portal-section .ps-h{font-size:15px;font-weight:600;color:var(--gray-700);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.portal-qr{text-align:center;padding:10px;}
+.portal-qr .qr-canvas{display:inline-block;background:#fff;padding:12px;border:1px solid var(--gray-200);border-radius:12px;margin-bottom:10px;}
+.portal-qr .qr-canvas img{width:180px;height:180px;image-rendering:pixelated;}
+.portal-qr .hint{font-size:12px;color:var(--gray-400);line-height:1.8;max-width:400px;margin:0 auto;}
+.p-list{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.p-item{border:1px solid var(--gray-200);border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;}
+.p-item .pi-t{font-size:13px;font-weight:600;color:var(--gray-700);}
+.p-item .pi-d{font-size:11px;color:var(--gray-400);margin-top:2px;}
+@media(max-width:640px){.pack{grid-template-columns:1fr;}.portal-head{flex-wrap:wrap;}}
+/* ===== 用户账号管理 ===== */
+.user-role-tag{font-size:11px;}
+</style>
+</head>
+<body>
+
+<!-- 扫码落地页（二维码打开时全屏显示） -->
+<div class="landing" id="landingPage" style="display:none">
+  <div class="lc" id="landingCard"></div>
+</div>
+
+<!-- 登录页 -->
+<div class="login-page" id="loginPage" style="display:none">
+  <div class="login-card">
+    <div class="logo">🏫</div>
+    <h2>校园管理系统</h2>
+    <div class="sub">请使用您的账号登录</div>
+    <div class="form-item"><label>账号（学号/工号）</label><input id="loginNo" placeholder="请输入学号或工号" autocomplete="username"></div>
+    <div class="form-item"><label>密码</label><input id="loginPwd" type="password" placeholder="请输入密码" autocomplete="current-password"></div>
+    <button class="btn primary" onclick="doLogin()">登 录</button>
+    <div class="login-err" id="loginErr"></div>
+    <div class="login-tip">学生/教师初始密码：123456<br>管理员初始密码：admin123</div>
+  </div>
+</div>
+
+<!-- 侧边栏 -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="icon">🏫</div>
+    <div>
+      <div class="t">校园管理系统</div>
+      <div class="s">Campus Management</div>
+    </div>
+  </div>
+  <nav class="nav">
+    <div class="group">总览</div>
+    <a data-view="dashboard" class="active"><span class="ic">📊</span>仪表盘</a>
+    <div class="group">基础信息</div>
+    <a data-view="classes"><span class="ic">🏫</span>班级管理</a>
+    <a data-view="students"><span class="ic">👨‍🎓</span>学生管理</a>
+    <a data-view="teachers"><span class="ic">👩‍🏫</span>教师管理</a>
+    <a data-view="dormitories"><span class="ic">🛏️</span>宿舍管理</a>
+    <div class="group">教学教务</div>
+    <a data-view="courses"><span class="ic">📚</span>课程管理</a>
+    <a data-view="timetable"><span class="ic">🗓️</span>课表查询</a>
+    <a data-view="scores"><span class="ic">📝</span>成绩管理</a>
+    <a data-view="attendance"><span class="ic">📅</span>考勤管理</a>
+    <div class="group">系统</div>
+    <a data-view="users"><span class="ic">🔐</span>账号管理</a>
+  </nav>
+  <div class="foot">数据保存在本地浏览器<br>V1.0 · 纯本地运行</div>
+</aside>
+
+<!-- 主区域 -->
+<div class="main">
+  <div class="topbar">
+    <div>
+      <h1 id="pageTitle">仪表盘</h1>
+      <div class="sub" id="pageSub">校园数据总览</div>
+    </div>
+    <div class="tools">
+      <button class="btn" onclick="exportData()">📤 导出数据</button>
+      <button class="btn" onclick="importData()">📥 导入数据</button>
+      <button class="btn danger" onclick="confirmReset()">重置演示数据</button>
+      <button class="btn danger" onclick="doLogout()">🚪 退出登录</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ============ 仪表盘 ============ -->
+    <div class="view active" id="view-dashboard">
+      <div class="stats">
+        <div class="stat c1" onclick="go('students')"><div class="ic">👨‍🎓</div><div><div class="num" id="stStudents">0</div><div class="label">在校学生</div></div></div>
+        <div class="stat c2" onclick="go('teachers')"><div class="ic">👩‍🏫</div><div><div class="num" id="stTeachers">0</div><div class="label">教职工</div></div></div>
+        <div class="stat c3" onclick="go('classes')"><div class="ic">🏫</div><div><div class="num" id="stClasses">0</div><div class="label">班级数量</div></div></div>
+        <div class="stat c4" onclick="go('courses')"><div class="ic">📚</div><div><div class="num" id="stCourses">0</div><div class="label">开设课程</div></div></div>
+        <div class="stat c5" onclick="go('dormitories')"><div class="ic">🛏️</div><div><div class="num" id="stDorm">0</div><div class="label">宿舍入住率</div></div></div>
+        <div class="stat c6" onclick="go('attendance')"><div class="ic">📅</div><div><div class="num" id="stAtt">0</div><div class="label">今日出勤率</div></div></div>
+      </div>
+      <div class="dash-grid">
+        <div class="card">
+          <div class="card-h"><h3>各年级班级概况</h3><span class="desc">按年级统计班级与学生数</span></div>
+          <div id="gradeOverview"></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h3>快捷操作</h3></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <button class="btn primary" onclick="openStudentModal()">＋ 录入学生</button>
+            <button class="btn" onclick="openTeacherModal()">＋ 添加教师</button>
+            <button class="btn" onclick="openClassModal()">＋ 新建班级</button>
+            <button class="btn" onclick="openCourseModal()">＋ 添加课程</button>
+            <button class="btn" onclick="openScoreModal()">＋ 录入成绩</button>
+            <button class="btn" onclick="openAttendanceModal()">＋ 记录考勤</button>
+          </div>
+        </div>
+      </div>
+      <div class="dash-grid" style="margin-top:16px;">
+        <div class="card">
+          <div class="card-h"><h3>最近动态</h3><span class="desc">近期的数据变更记录</span></div>
+          <div class="feed-timeline" id="feedTimeline"></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h3>课程热度 Top 5</h3><span class="desc">按选课人数排序</span></div>
+          <div id="courseTop"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 班级管理 ============ -->
+    <div class="view" id="view-classes">
+      <div class="card">
+        <div class="toolbar">
+          <input class="search" id="clsSearch" placeholder="🔍 搜索班级名称、年级、班主任…" oninput="renderClasses()">
+          <div class="right"><button class="btn primary" onclick="openClassModal()">＋ 新建班级</button></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>班级名称</th><th>年级</th><th>班主任</th><th>教室</th><th>学生人数</th><th>班级二维码</th><th style="text-align:right">操作</th></tr></thead>
+            <tbody id="classTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 学生管理 ============ -->
+    <div class="view" id="view-students">
+      <div class="card">
+        <div class="toolbar">
+          <div class="search"><input id="stuSearch" placeholder="🔍 搜索姓名、学号、手机号…" oninput="renderStudents()"></div>
+          <select id="stuClassFilter" style="width:150px" onchange="renderStudents()"><option value="">全部班级</option></select>
+          <div class="right"><button class="btn" onclick="exportStudentsCsv()">⬇ 导出CSV</button><button class="btn primary" onclick="openStudentModal()">＋ 录入学生</button></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>学号</th><th>姓名</th><th>性别</th><th>班级</th><th>宿舍</th><th>联系电话</th><th style="text-align:right">操作</th></tr></thead>
+            <tbody id="studentBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 教师管理 ============ -->
+    <div class="view" id="view-teachers">
+      <div class="card">
+        <div class="toolbar">
+          <div class="search"><input id="teaSearch" placeholder="🔍 搜索姓名、工号、学科…" oninput="renderTeachers()"></div>
+          <div class="right"><button class="btn primary" onclick="openTeacherModal()">＋ 添加教师</button></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>工号</th><th>姓名</th><th>性别</th><th>任教学科</th><th>职称</th><th>联系电话</th><th style="text-align:right">操作</th></tr></thead>
+            <tbody id="teacherBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 课程管理 ============ -->
+    <div class="view" id="view-courses">
+      <div class="card">
+        <div class="toolbar">
+          <div class="search"><input id="couSearch" placeholder="🔍 搜索课程名称、授课教师…" oninput="renderCourses()"></div>
+          <div class="right"><button class="btn primary" onclick="openCourseModal()">＋ 添加课程</button></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>课程名称</th><th>课程编号</th><th>学分</th><th>授课教师</th><th>上课时间</th><th>选课人数</th><th style="text-align:right">操作</th></tr></thead>
+            <tbody id="courseBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 课表查询 ============ -->
+    <div class="view" id="view-timetable">
+      <div class="card">
+        <div class="toolbar">
+          <div class="tt-tabs" id="ttTabs" style="display:flex;gap:6px;">
+            <button class="btn primary" data-mode="class" onclick="setTtMode('class')">🏫 班级课表</button>
+            <button class="btn" data-mode="teacher" onclick="setTtMode('teacher')">👩‍🏫 教师课表</button>
+          </div>
+          <select id="ttClassSel" style="width:180px" onchange="renderTimetable()"></select>
+          <select id="ttTeacherSel" style="width:180px;display:none" onchange="renderTimetable()"></select>
+          <div class="right">
+            <button class="btn" onclick="printTimetable()">🖨️ 打印课表</button>
+            <button class="btn" onclick="exportTimetable()">⬇ 导出</button>
+          </div>
+        </div>
+        <div id="ttPersonInfo" class="tt-person" style="margin-bottom:16px;"></div>
+        <div class="table-wrap timetable-wrap">
+          <table class="timetable" id="ttTable"></table>
+        </div>
+        <div class="tt-legend">
+          <span><span class="dot" style="background:var(--primary-light);border:1px solid #bfdbfe;"></span>课程</span>
+          <span><span class="dot" style="background:var(--danger-light);border:1px solid #fecaca;"></span>时间冲突</span>
+          <span style="margin-left:auto">点击课程格子可查看详情</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 成绩管理 ============ -->
+    <div class="view" id="view-scores">
+      <div class="card">
+        <div class="toolbar">
+          <div class="search"><input id="scoreSearch" placeholder="🔍 搜索学生姓名、课程…" oninput="renderScores()"></div>
+          <select id="scoreCourseFilter" style="width:150px" onchange="renderScores()"><option value="">全部课程</option></select>
+          <select id="scoreExamFilter" style="width:120px" onchange="renderScores()"><option value="">全部考试</option><option>期中考试</option><option>期末考试</option><option>月考</option><option>平时测验</option></select>
+          <div class="right"><button class="btn" onclick="openScoreStats()">📈 成绩分析</button><button class="btn primary" onclick="openScoreModal()">＋ 录入成绩</button></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>学生</th><th>班级</th><th>课程</th><th>考试类型</th><th>学期</th><th>成绩</th><th style="text-align:right">操作</th></tr></thead>
+            <tbody id="scoreBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 考勤管理 ============ -->
+    <div class="view" id="view-attendance">
+      <div class="card">
+        <div class="toolbar">
+          <div class="search"><input id="attSearch" placeholder="🔍 搜索学生姓名…" oninput="renderAttendance()"></div>
+          <input type="date" id="attDateFilter" style="width:160px" onchange="renderAttendance()">
+          <select id="attClassFilter" style="width:150px" onchange="renderAttendance()"><option value="">全部班级</option></select>
+          <div class="right"><button class="btn" onclick="openAttStats()">📈 出勤统计</button><button class="btn" onclick="openClassLogs()">🕐 课堂打卡</button><button class="btn primary" onclick="openAttendanceModal()">＋ 记录考勤</button></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>日期</th><th>学生</th><th>班级</th><th>状态</th><th>备注</th><th>签到凭证</th><th style="text-align:right">操作</th></tr></thead>
+            <tbody id="attBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 宿舍管理 ============ -->
+    <div class="view" id="view-dormitories">
+      <div class="card">
+        <div class="toolbar">
+          <div class="search"><input id="dormSearch" placeholder="🔍 搜索楼栋、房间号…" oninput="renderDormitories()"></div>
+          <div class="right"><button class="btn primary" onclick="openDormModal()">＋ 添加宿舍</button></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>楼栋</th><th>房间号</th><th>床位容量</th><th>已入住</th><th>入住率</th><th>宿舍长</th><th style="text-align:right">操作</th></tr></thead>
+            <tbody id="dormBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 账号管理 ============ -->
+    <div class="view" id="view-users">
+      <div class="card">
+        <div class="toolbar">
+          <div class="search"><input id="userSearch" placeholder="🔍 搜索账号、姓名…" oninput="renderUsers()"></div>
+          <select id="userRoleFilter" style="width:140px" onchange="renderUsers()"><option value="">全部角色</option><option>admin</option><option>teacher</option><option>student</option></select>
+          <div class="right"><button class="btn" onclick="syncAllAccounts()">🔄 同步全部账号</button></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>账号</th><th>姓名</th><th>角色</th><th>关联身份</th><th>密码</th><th style="text-align:right">操作</th></tr></thead>
+            <tbody id="userBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 教师工作台 ============ -->
+    <div class="portal" id="portal-teacher">
+      <div class="portal-head">
+        <div class="av" id="t_av">👩‍🏫</div>
+        <div class="info"><div class="n" id="t_name">教师</div><div class="d" id="t_sub">教师工作台</div></div>
+        <div class="tools">
+          <button class="btn" onclick="showMyQr('teacher')">ⓠ 我的专属二维码</button>
+          <button class="btn" onclick="doLogout()">🚪 退出登录</button>
+        </div>
+      </div>
+      <div class="portal-cards">
+        <div class="portal-card"><div class="pc-ic">📚</div><div class="pc-v" id="t_courseCount">0</div><div class="pc-l">我的课程</div></div>
+        <div class="portal-card"><div class="pc-ic">🏫</div><div class="pc-v" id="t_classCount">0</div><div class="pc-l">任教班级</div></div>
+        <div class="portal-card"><div class="pc-ic">🕐</div><div class="pc-v" id="t_punchCount">0</div><div class="pc-l">累计打卡次数</div></div>
+        <div class="portal-card"><div class="pc-ic">📅</div><div class="pc-v" id="t_todayPunch">0</div><div class="pc-l">今日打卡</div></div>
+      </div>
+      <div class="portal-section">
+        <div class="ps-h">📅 今日我的课程</div>
+        <div id="t_todayCourses" class="p-list"></div>
+      </div>
+      <div class="portal-section">
+        <div class="ps-h">📚 我的全部课程</div>
+        <div id="t_myCourses" class="p-list"></div>
+      </div>
+      <div class="portal-section">
+        <div class="ps-h">🕐 我的打卡记录</div>
+        <div id="t_myPunch" class="table-wrap"></div>
+      </div>
+    </div>
+
+    <!-- ============ 学生工作台 ============ -->
+    <div class="portal" id="portal-student">
+      <div class="portal-head">
+        <div class="av" id="s_av">👨‍🎓</div>
+        <div class="info"><div class="n" id="s_name">学生</div><div class="d" id="s_sub">—</div></div>
+        <div class="tools">
+          <button class="btn" onclick="showMyQr('student')">ⓠ 我的专属二维码</button>
+          <button class="btn" onclick="doLogout()">🚪 退出登录</button>
+        </div>
+      </div>
+      <div class="portal-cards">
+        <div class="portal-card"><div class="pc-ic">📅</div><div class="pc-v" id="s_todayCourses">0</div><div class="pc-l">今日课程</div></div>
+        <div class="portal-card"><div class="pc-ic">📚</div><div class="pc-v" id="s_weekCourses">0</div><div class="pc-l">本周课程数</div></div>
+        <div class="portal-card"><div class="pc-ic">📝</div><div class="pc-v" id="s_scoreAvg">—</div><div class="pc-l">平均成绩</div></div>
+        <div class="portal-card"><div class="pc-ic">✅</div><div class="pc-v" id="s_attToday">未签到</div><div class="pc-l">今日签到状态</div></div>
+      </div>
+      <div class="portal-section">
+        <div class="ps-h">📅 今日课程</div>
+        <div id="s_todayList" class="p-list"></div>
+      </div>
+      <div class="portal-section">
+        <div class="ps-h">🕐 我的出勤记录</div>
+        <div id="s_myAtt" class="table-wrap"></div>
+      </div>
+      <div class="portal-section">
+        <div class="ps-h">📝 我的成绩</div>
+        <div id="s_myScores" class="table-wrap"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 通用模态框 -->
+<div class="modal-mask" id="modalMask">
+  <div class="modal" id="modalBox">
+    <div class="modal-h"><h3 id="modalTitle"></h3><div class="x" onclick="closeModal()">✕</div></div>
+    <div class="modal-b" id="modalBody"></div>
+    <div class="modal-f" id="modalFoot"></div>
+  </div>
+</div>
+
+<div class="toast-msg" id="toast"></div>
+<input type="file" id="fileInput" accept=".json,application/json" style="display:none" onchange="handleImport(event)">
+
+<!-- QR Code Generator (MIT License, Kazuhiko Arase, https://github.com/kazuhikoarase/qrcode-generator) -->
+<script>
+//---------------------------------------------------------------------
+//
+// QR Code Generator for JavaScript
+//
+// Copyright (c) 2009 Kazuhiko Arase
+//
+// URL: http://www.d-project.com/
+//
+// Licensed under the MIT license:
+//  http://www.opensource.org/licenses/mit-license.php
+//
+// The word 'QR Code' is registered trademark of
+// DENSO WAVE INCORPORATED
+//  http://www.denso-wave.com/qrcode/faqpatent-e.html
+//
+//---------------------------------------------------------------------
+
+var qrcode = function() {
+
+  //---------------------------------------------------------------------
+  // qrcode
+  //---------------------------------------------------------------------
+
+  /**
+   * qrcode
+   * @param typeNumber 1 to 40
+   * @param errorCorrectionLevel 'L','M','Q','H'
+   */
+  var qrcode = function(typeNumber, errorCorrectionLevel) {
+
+    var PAD0 = 0xEC;
+    var PAD1 = 0x11;
+
+    var _typeNumber = typeNumber;
+    var _errorCorrectionLevel = QRErrorCorrectionLevel[errorCorrectionLevel];
+    var _modules = null;
+    var _moduleCount = 0;
+    var _dataCache = null;
+    var _dataList = [];
+
+    var _this = {};
+
+    var makeImpl = function(test, maskPattern) {
+
+      _moduleCount = _typeNumber * 4 + 17;
+      _modules = function(moduleCount) {
+        var modules = new Array(moduleCount);
+        for (var row = 0; row < moduleCount; row += 1) {
+          modules[row] = new Array(moduleCount);
+          for (var col = 0; col < moduleCount; col += 1) {
+            modules[row][col] = null;
+          }
+        }
+        return modules;
+      }(_moduleCount);
+
+      setupPositionProbePattern(0, 0);
+      setupPositionProbePattern(_moduleCount - 7, 0);
+      setupPositionProbePattern(0, _moduleCount - 7);
+      setupPositionAdjustPattern();
+      setupTimingPattern();
+      setupTypeInfo(test, maskPattern);
+
+      if (_typeNumber >= 7) {
+        setupTypeNumber(test);
+      }
+
+      if (_dataCache == null) {
+        _dataCache = createData(_typeNumber, _errorCorrectionLevel, _dataList);
+      }
+
+      mapData(_dataCache, maskPattern);
+    };
+
+    var setupPositionProbePattern = function(row, col) {
+
+      for (var r = -1; r <= 7; r += 1) {
+
+        if (row + r <= -1 || _moduleCount <= row + r) continue;
+
+        for (var c = -1; c <= 7; c += 1) {
+
+          if (col + c <= -1 || _moduleCount <= col + c) continue;
+
+          if ( (0 <= r && r <= 6 && (c == 0 || c == 6) )
+              || (0 <= c && c <= 6 && (r == 0 || r == 6) )
+              || (2 <= r && r <= 4 && 2 <= c && c <= 4) ) {
+            _modules[row + r][col + c] = true;
+          } else {
+            _modules[row + r][col + c] = false;
+          }
+        }
+      }
+    };
+
+    var getBestMaskPattern = function() {
+
+      var minLostPoint = 0;
+      var pattern = 0;
+
+      for (var i = 0; i < 8; i += 1) {
+
+        makeImpl(true, i);
+
+        var lostPoint = QRUtil.getLostPoint(_this);
+
+        if (i == 0 || minLostPoint > lostPoint) {
+          minLostPoint = lostPoint;
+          pattern = i;
+        }
+      }
+
+      return pattern;
+    };
+
+    var setupTimingPattern = function() {
+
+      for (var r = 8; r < _moduleCount - 8; r += 1) {
+        if (_modules[r][6] != null) {
+          continue;
+        }
+        _modules[r][6] = (r % 2 == 0);
+      }
+
+      for (var c = 8; c < _moduleCount - 8; c += 1) {
+        if (_modules[6][c] != null) {
+          continue;
+        }
+        _modules[6][c] = (c % 2 == 0);
+      }
+    };
+
+    var setupPositionAdjustPattern = function() {
+
+      var pos = QRUtil.getPatternPosition(_typeNumber);
+
+      for (var i = 0; i < pos.length; i += 1) {
+
+        for (var j = 0; j < pos.length; j += 1) {
+
+          var row = pos[i];
+          var col = pos[j];
+
+          if (_modules[row][col] != null) {
+            continue;
+          }
+
+          for (var r = -2; r <= 2; r += 1) {
+
+            for (var c = -2; c <= 2; c += 1) {
+
+              if (r == -2 || r == 2 || c == -2 || c == 2
+                  || (r == 0 && c == 0) ) {
+                _modules[row + r][col + c] = true;
+              } else {
+                _modules[row + r][col + c] = false;
+              }
+            }
+          }
+        }
+      }
+    };
+
+    var setupTypeNumber = function(test) {
+
+      var bits = QRUtil.getBCHTypeNumber(_typeNumber);
+
+      for (var i = 0; i < 18; i += 1) {
+        var mod = (!test && ( (bits >> i) & 1) == 1);
+        _modules[Math.floor(i / 3)][i % 3 + _moduleCount - 8 - 3] = mod;
+      }
+
+      for (var i = 0; i < 18; i += 1) {
+        var mod = (!test && ( (bits >> i) & 1) == 1);
+        _modules[i % 3 + _moduleCount - 8 - 3][Math.floor(i / 3)] = mod;
+      }
+    };
+
+    var setupTypeInfo = function(test, maskPattern) {
+
+      var data = (_errorCorrectionLevel << 3) | maskPattern;
+      var bits = QRUtil.getBCHTypeInfo(data);
+
+      // vertical
+      for (var i = 0; i < 15; i += 1) {
+
+        var mod = (!test && ( (bits >> i) & 1) == 1);
+
+        if (i < 6) {
+          _modules[i][8] = mod;
+        } else if (i < 8) {
+          _modules[i + 1][8] = mod;
+        } else {
+          _modules[_moduleCount - 15 + i][8] = mod;
+        }
+      }
+
+      // horizontal
+      for (var i = 0; i < 15; i += 1) {
+
+        var mod = (!test && ( (bits >> i) & 1) == 1);
+
+        if (i < 8) {
+          _modules[8][_moduleCount - i - 1] = mod;
+        } else if (i < 9) {
+          _modules[8][15 - i - 1 + 1] = mod;
+        } else {
+          _modules[8][15 - i - 1] = mod;
+        }
+      }
+
+      // fixed module
+      _modules[_moduleCount - 8][8] = (!test);
+    };
+
+    var mapData = function(data, maskPattern) {
+
+      var inc = -1;
+      var row = _moduleCount - 1;
+      var bitIndex = 7;
+      var byteIndex = 0;
+      var maskFunc = QRUtil.getMaskFunction(maskPattern);
+
+      for (var col = _moduleCount - 1; col > 0; col -= 2) {
+
+        if (col == 6) col -= 1;
+
+        while (true) {
+
+          for (var c = 0; c < 2; c += 1) {
+
+            if (_modules[row][col - c] == null) {
+
+              var dark = false;
+
+              if (byteIndex < data.length) {
+                dark = ( ( (data[byteIndex] >>> bitIndex) & 1) == 1);
+              }
+
+              var mask = maskFunc(row, col - c);
+
+              if (mask) {
+                dark = !dark;
+              }
+
+              _modules[row][col - c] = dark;
+              bitIndex -= 1;
+
+              if (bitIndex == -1) {
+                byteIndex += 1;
+                bitIndex = 7;
+              }
+            }
+          }
+
+          row += inc;
+
+          if (row < 0 || _moduleCount <= row) {
+            row -= inc;
+            inc = -inc;
+            break;
+          }
+        }
+      }
+    };
+
+    var createBytes = function(buffer, rsBlocks) {
+
+      var offset = 0;
+
+      var maxDcCount = 0;
+      var maxEcCount = 0;
+
+      var dcdata = new Array(rsBlocks.length);
+      var ecdata = new Array(rsBlocks.length);
+
+      for (var r = 0; r < rsBlocks.length; r += 1) {
+
+        var dcCount = rsBlocks[r].dataCount;
+        var ecCount = rsBlocks[r].totalCount - dcCount;
+
+        maxDcCount = Math.max(maxDcCount, dcCount);
+        maxEcCount = Math.max(maxEcCount, ecCount);
+
+        dcdata[r] = new Array(dcCount);
+
+        for (var i = 0; i < dcdata[r].length; i += 1) {
+          dcdata[r][i] = 0xff & buffer.getBuffer()[i + offset];
+        }
+        offset += dcCount;
+
+        var rsPoly = QRUtil.getErrorCorrectPolynomial(ecCount);
+        var rawPoly = qrPolynomial(dcdata[r], rsPoly.getLength() - 1);
+
+        var modPoly = rawPoly.mod(rsPoly);
+        ecdata[r] = new Array(rsPoly.getLength() - 1);
+        for (var i = 0; i < ecdata[r].length; i += 1) {
+          var modIndex = i + modPoly.getLength() - ecdata[r].length;
+          ecdata[r][i] = (modIndex >= 0)? modPoly.getAt(modIndex) : 0;
+        }
+      }
+
+      var totalCodeCount = 0;
+      for (var i = 0; i < rsBlocks.length; i += 1) {
+        totalCodeCount += rsBlocks[i].totalCount;
+      }
+
+      var data = new Array(totalCodeCount);
+      var index = 0;
+
+      for (var i = 0; i < maxDcCount; i += 1) {
+        for (var r = 0; r < rsBlocks.length; r += 1) {
+          if (i < dcdata[r].length) {
+            data[index] = dcdata[r][i];
+            index += 1;
+          }
+        }
+      }
+
+      for (var i = 0; i < maxEcCount; i += 1) {
+        for (var r = 0; r < rsBlocks.length; r += 1) {
+          if (i < ecdata[r].length) {
+            data[index] = ecdata[r][i];
+            index += 1;
+          }
+        }
+      }
+
+      return data;
+    };
+
+    var createData = function(typeNumber, errorCorrectionLevel, dataList) {
+
+      var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, errorCorrectionLevel);
+
+      var buffer = qrBitBuffer();
+
+      for (var i = 0; i < dataList.length; i += 1) {
+        var data = dataList[i];
+        buffer.put(data.getMode(), 4);
+        buffer.put(data.getLength(), QRUtil.getLengthInBits(data.getMode(), typeNumber) );
+        data.write(buffer);
+      }
+
+      // calc num max data.
+      var totalDataCount = 0;
+      for (var i = 0; i < rsBlocks.length; i += 1) {
+        totalDataCount += rsBlocks[i].dataCount;
+      }
+
+      if (buffer.getLengthInBits() > totalDataCount * 8) {
+        throw 'code length overflow. ('
+          + buffer.getLengthInBits()
+          + '>'
+          + totalDataCount * 8
+          + ')';
+      }
+
+      // end code
+      if (buffer.getLengthInBits() + 4 <= totalDataCount * 8) {
+        buffer.put(0, 4);
+      }
+
+      // padding
+      while (buffer.getLengthInBits() % 8 != 0) {
+        buffer.putBit(false);
+      }
+
+      // padding
+      while (true) {
+
+        if (buffer.getLengthInBits() >= totalDataCount * 8) {
+          break;
+        }
+        buffer.put(PAD0, 8);
+
+        if (buffer.getLengthInBits() >= totalDataCount * 8) {
+          break;
+        }
+        buffer.put(PAD1, 8);
+      }
+
+      return createBytes(buffer, rsBlocks);
+    };
+
+    _this.addData = function(data, mode) {
+
+      mode = mode || 'Byte';
+
+      var newData = null;
+
+      switch(mode) {
+      case 'Numeric' :
+        newData = qrNumber(data);
+        break;
+      case 'Alphanumeric' :
+        newData = qrAlphaNum(data);
+        break;
+      case 'Byte' :
+        newData = qr8BitByte(data);
+        break;
+      case 'Kanji' :
+        newData = qrKanji(data);
+        break;
+      default :
+        throw 'mode:' + mode;
+      }
+
+      _dataList.push(newData);
+      _dataCache = null;
+    };
+
+    _this.isDark = function(row, col) {
+      if (row < 0 || _moduleCount <= row || col < 0 || _moduleCount <= col) {
+        throw row + ',' + col;
+      }
+      return _modules[row][col];
+    };
+
+    _this.getModuleCount = function() {
+      return _moduleCount;
+    };
+
+    _this.make = function() {
+      if (_typeNumber < 1) {
+        var typeNumber = 1;
+
+        for (; typeNumber < 40; typeNumber++) {
+          var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, _errorCorrectionLevel);
+          var buffer = qrBitBuffer();
+
+          for (var i = 0; i < _dataList.length; i++) {
+            var data = _dataList[i];
+            buffer.put(data.getMode(), 4);
+            buffer.put(data.getLength(), QRUtil.getLengthInBits(data.getMode(), typeNumber) );
+            data.write(buffer);
+          }
+
+          var totalDataCount = 0;
+          for (var i = 0; i < rsBlocks.length; i++) {
+            totalDataCount += rsBlocks[i].dataCount;
+          }
+
+          if (buffer.getLengthInBits() <= totalDataCount * 8) {
+            break;
+          }
+        }
+
+        _typeNumber = typeNumber;
+      }
+
+      makeImpl(false, getBestMaskPattern() );
+    };
+
+    _this.createTableTag = function(cellSize, margin) {
+
+      cellSize = cellSize || 2;
+      margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+      var qrHtml = '';
+
+      qrHtml += '<table style="';
+      qrHtml += ' border-width: 0px; border-style: none;';
+      qrHtml += ' border-collapse: collapse;';
+      qrHtml += ' padding: 0px; margin: ' + margin + 'px;';
+      qrHtml += '">';
+      qrHtml += '<tbody>';
+
+      for (var r = 0; r < _this.getModuleCount(); r += 1) {
+
+        qrHtml += '<tr>';
+
+        for (var c = 0; c < _this.getModuleCount(); c += 1) {
+          qrHtml += '<td style="';
+          qrHtml += ' border-width: 0px; border-style: none;';
+          qrHtml += ' border-collapse: collapse;';
+          qrHtml += ' padding: 0px; margin: 0px;';
+          qrHtml += ' width: ' + cellSize + 'px;';
+          qrHtml += ' height: ' + cellSize + 'px;';
+          qrHtml += ' background-color: ';
+          qrHtml += _this.isDark(r, c)? '#000000' : '#ffffff';
+          qrHtml += ';';
+          qrHtml += '"/>';
+        }
+
+        qrHtml += '</tr>';
+      }
+
+      qrHtml += '</tbody>';
+      qrHtml += '</table>';
+
+      return qrHtml;
+    };
+
+    _this.createSvgTag = function(cellSize, margin, alt, title) {
+
+      var opts = {};
+      if (typeof arguments[0] == 'object') {
+        // Called by options.
+        opts = arguments[0];
+        // overwrite cellSize and margin.
+        cellSize = opts.cellSize;
+        margin = opts.margin;
+        alt = opts.alt;
+        title = opts.title;
+      }
+
+      cellSize = cellSize || 2;
+      margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+      // Compose alt property surrogate
+      alt = (typeof alt === 'string') ? {text: alt} : alt || {};
+      alt.text = alt.text || null;
+      alt.id = (alt.text) ? alt.id || 'qrcode-description' : null;
+
+      // Compose title property surrogate
+      title = (typeof title === 'string') ? {text: title} : title || {};
+      title.text = title.text || null;
+      title.id = (title.text) ? title.id || 'qrcode-title' : null;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+      var c, mc, r, mr, qrSvg='', rect;
+
+      rect = 'l' + cellSize + ',0 0,' + cellSize +
+        ' -' + cellSize + ',0 0,-' + cellSize + 'z ';
+
+      qrSvg += '<svg version="1.1" xmlns="http://www.w3.org/2000/svg"';
+      qrSvg += !opts.scalable ? ' width="' + size + 'px" height="' + size + 'px"' : '';
+      qrSvg += ' viewBox="0 0 ' + size + ' ' + size + '" ';
+      qrSvg += ' preserveAspectRatio="xMinYMin meet"';
+      qrSvg += (title.text || alt.text) ? ' role="img" aria-labelledby="' +
+          escapeXml([title.id, alt.id].join(' ').trim() ) + '"' : '';
+      qrSvg += '>';
+      qrSvg += (title.text) ? '<title id="' + escapeXml(title.id) + '">' +
+          escapeXml(title.text) + '</title>' : '';
+      qrSvg += (alt.text) ? '<description id="' + escapeXml(alt.id) + '">' +
+          escapeXml(alt.text) + '</description>' : '';
+      qrSvg += '<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>';
+      qrSvg += '<path d="';
+
+      for (r = 0; r < _this.getModuleCount(); r += 1) {
+        mr = r * cellSize + margin;
+        for (c = 0; c < _this.getModuleCount(); c += 1) {
+          if (_this.isDark(r, c) ) {
+            mc = c*cellSize+margin;
+            qrSvg += 'M' + mc + ',' + mr + rect;
+          }
+        }
+      }
+
+      qrSvg += '" stroke="transparent" fill="black"/>';
+      qrSvg += '</svg>';
+
+      return qrSvg;
+    };
+
+    _this.createDataURL = function(cellSize, margin) {
+
+      cellSize = cellSize || 2;
+      margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+      var min = margin;
+      var max = size - margin;
+
+      return createDataURL(size, size, function(x, y) {
+        if (min <= x && x < max && min <= y && y < max) {
+          var c = Math.floor( (x - min) / cellSize);
+          var r = Math.floor( (y - min) / cellSize);
+          return _this.isDark(r, c)? 0 : 1;
+        } else {
+          return 1;
+        }
+      } );
+    };
+
+    _this.createImgTag = function(cellSize, margin, alt) {
+
+      cellSize = cellSize || 2;
+      margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+
+      var img = '';
+      img += '<img';
+      img += '\u0020src="';
+      img += _this.createDataURL(cellSize, margin);
+      img += '"';
+      img += '\u0020width="';
+      img += size;
+      img += '"';
+      img += '\u0020height="';
+      img += size;
+      img += '"';
+      if (alt) {
+        img += '\u0020alt="';
+        img += escapeXml(alt);
+        img += '"';
+      }
+      img += '/>';
+
+      return img;
+    };
+
+    var escapeXml = function(s) {
+      var escaped = '';
+      for (var i = 0; i < s.length; i += 1) {
+        var c = s.charAt(i);
+        switch(c) {
+        case '<': escaped += '&lt;'; break;
+        case '>': escaped += '&gt;'; break;
+        case '&': escaped += '&amp;'; break;
+        case '"': escaped += '&quot;'; break;
+        default : escaped += c; break;
+        }
+      }
+      return escaped;
+    };
+
+    var _createHalfASCII = function(margin) {
+      var cellSize = 1;
+      margin = (typeof margin == 'undefined')? cellSize * 2 : margin;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+      var min = margin;
+      var max = size - margin;
+
+      var y, x, r1, r2, p;
+
+      var blocks = {
+        '██': '█',
+        '█ ': '▀',
+        ' █': '▄',
+        '  ': ' '
+      };
+
+      var blocksLastLineNoMargin = {
+        '██': '▀',
+        '█ ': '▀',
+        ' █': ' ',
+        '  ': ' '
+      };
+
+      var ascii = '';
+      for (y = 0; y < size; y += 2) {
+        r1 = Math.floor((y - min) / cellSize);
+        r2 = Math.floor((y + 1 - min) / cellSize);
+        for (x = 0; x < size; x += 1) {
+          p = '█';
+
+          if (min <= x && x < max && min <= y && y < max && _this.isDark(r1, Math.floor((x - min) / cellSize))) {
+            p = ' ';
+          }
+
+          if (min <= x && x < max && min <= y+1 && y+1 < max && _this.isDark(r2, Math.floor((x - min) / cellSize))) {
+            p += ' ';
+          }
+          else {
+            p += '█';
+          }
+
+          // Output 2 characters per pixel, to create full square. 1 character per pixels gives only half width of square.
+          ascii += (margin < 1 && y+1 >= max) ? blocksLastLineNoMargin[p] : blocks[p];
+        }
+
+        ascii += '\n';
+      }
+
+      if (size % 2 && margin > 0) {
+        return ascii.substring(0, ascii.length - size - 1) + Array(size+1).join('▀');
+      }
+
+      return ascii.substring(0, ascii.length-1);
+    };
+
+    _this.createASCII = function(cellSize, margin) {
+      cellSize = cellSize || 1;
+
+      if (cellSize < 2) {
+        return _createHalfASCII(margin);
+      }
+
+      cellSize -= 1;
+      margin = (typeof margin == 'undefined')? cellSize * 2 : margin;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+      var min = margin;
+      var max = size - margin;
+
+      var y, x, r, p;
+
+      var white = Array(cellSize+1).join('██');
+      var black = Array(cellSize+1).join('  ');
+
+      var ascii = '';
+      var line = '';
+      for (y = 0; y < size; y += 1) {
+        r = Math.floor( (y - min) / cellSize);
+        line = '';
+        for (x = 0; x < size; x += 1) {
+          p = 1;
+
+          if (min <= x && x < max && min <= y && y < max && _this.isDark(r, Math.floor((x - min) / cellSize))) {
+            p = 0;
+          }
+
+          // Output 2 characters per pixel, to create full square. 1 character per pixels gives only half width of square.
+          line += p ? white : black;
+        }
+
+        for (r = 0; r < cellSize; r += 1) {
+          ascii += line + '\n';
+        }
+      }
+
+      return ascii.substring(0, ascii.length-1);
+    };
+
+    _this.renderTo2dContext = function(context, cellSize) {
+      cellSize = cellSize || 2;
+      var length = _this.getModuleCount();
+      for (var row = 0; row < length; row++) {
+        for (var col = 0; col < length; col++) {
+          context.fillStyle = _this.isDark(row, col) ? 'black' : 'white';
+          context.fillRect(row * cellSize, col * cellSize, cellSize, cellSize);
+        }
+      }
+    }
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qrcode.stringToBytes
+  //---------------------------------------------------------------------
+
+  qrcode.stringToBytesFuncs = {
+    'default' : function(s) {
+      var bytes = [];
+      for (var i = 0; i < s.length; i += 1) {
+        var c = s.charCodeAt(i);
+        bytes.push(c & 0xff);
+      }
+      return bytes;
+    }
+  };
+
+  qrcode.stringToBytes = qrcode.stringToBytesFuncs['default'];
+
+  //---------------------------------------------------------------------
+  // qrcode.createStringToBytes
+  //---------------------------------------------------------------------
+
+  /**
+   * @param unicodeData base64 string of byte array.
+   * [16bit Unicode],[16bit Bytes], ...
+   * @param numChars
+   */
+  qrcode.createStringToBytes = function(unicodeData, numChars) {
+
+    // create conversion map.
+
+    var unicodeMap = function() {
+
+      var bin = base64DecodeInputStream(unicodeData);
+      var read = function() {
+        var b = bin.read();
+        if (b == -1) throw 'eof';
+        return b;
+      };
+
+      var count = 0;
+      var unicodeMap = {};
+      while (true) {
+        var b0 = bin.read();
+        if (b0 == -1) break;
+        var b1 = read();
+        var b2 = read();
+        var b3 = read();
+        var k = String.fromCharCode( (b0 << 8) | b1);
+        var v = (b2 << 8) | b3;
+        unicodeMap[k] = v;
+        count += 1;
+      }
+      if (count != numChars) {
+        throw count + ' != ' + numChars;
+      }
+
+      return unicodeMap;
+    }();
+
+    var unknownChar = '?'.charCodeAt(0);
+
+    return function(s) {
+      var bytes = [];
+      for (var i = 0; i < s.length; i += 1) {
+        var c = s.charCodeAt(i);
+        if (c < 128) {
+          bytes.push(c);
+        } else {
+          var b = unicodeMap[s.charAt(i)];
+          if (typeof b == 'number') {
+            if ( (b & 0xff) == b) {
+              // 1byte
+              bytes.push(b);
+            } else {
+              // 2bytes
+              bytes.push(b >>> 8);
+              bytes.push(b & 0xff);
+            }
+          } else {
+            bytes.push(unknownChar);
+          }
+        }
+      }
+      return bytes;
+    };
+  };
+
+  //---------------------------------------------------------------------
+  // QRMode
+  //---------------------------------------------------------------------
+
+  var QRMode = {
+    MODE_NUMBER :    1 << 0,
+    MODE_ALPHA_NUM : 1 << 1,
+    MODE_8BIT_BYTE : 1 << 2,
+    MODE_KANJI :     1 << 3
+  };
+
+  //---------------------------------------------------------------------
+  // QRErrorCorrectionLevel
+  //---------------------------------------------------------------------
+
+  var QRErrorCorrectionLevel = {
+    L : 1,
+    M : 0,
+    Q : 3,
+    H : 2
+  };
+
+  //---------------------------------------------------------------------
+  // QRMaskPattern
+  //---------------------------------------------------------------------
+
+  var QRMaskPattern = {
+    PATTERN000 : 0,
+    PATTERN001 : 1,
+    PATTERN010 : 2,
+    PATTERN011 : 3,
+    PATTERN100 : 4,
+    PATTERN101 : 5,
+    PATTERN110 : 6,
+    PATTERN111 : 7
+  };
+
+  //---------------------------------------------------------------------
+  // QRUtil
+  //---------------------------------------------------------------------
+
+  var QRUtil = function() {
+
+    var PATTERN_POSITION_TABLE = [
+      [],
+      [6, 18],
+      [6, 22],
+      [6, 26],
+      [6, 30],
+      [6, 34],
+      [6, 22, 38],
+      [6, 24, 42],
+      [6, 26, 46],
+      [6, 28, 50],
+      [6, 30, 54],
+      [6, 32, 58],
+      [6, 34, 62],
+      [6, 26, 46, 66],
+      [6, 26, 48, 70],
+      [6, 26, 50, 74],
+      [6, 30, 54, 78],
+      [6, 30, 56, 82],
+      [6, 30, 58, 86],
+      [6, 34, 62, 90],
+      [6, 28, 50, 72, 94],
+      [6, 26, 50, 74, 98],
+      [6, 30, 54, 78, 102],
+      [6, 28, 54, 80, 106],
+      [6, 32, 58, 84, 110],
+      [6, 30, 58, 86, 114],
+      [6, 34, 62, 90, 118],
+      [6, 26, 50, 74, 98, 122],
+      [6, 30, 54, 78, 102, 126],
+      [6, 26, 52, 78, 104, 130],
+      [6, 30, 56, 82, 108, 134],
+      [6, 34, 60, 86, 112, 138],
+      [6, 30, 58, 86, 114, 142],
+      [6, 34, 62, 90, 118, 146],
+      [6, 30, 54, 78, 102, 126, 150],
+      [6, 24, 50, 76, 102, 128, 154],
+      [6, 28, 54, 80, 106, 132, 158],
+      [6, 32, 58, 84, 110, 136, 162],
+      [6, 26, 54, 82, 110, 138, 166],
+      [6, 30, 58, 86, 114, 142, 170]
+    ];
+    var G15 = (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0);
+    var G18 = (1 << 12) | (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0);
+    var G15_MASK = (1 << 14) | (1 << 12) | (1 << 10) | (1 << 4) | (1 << 1);
+
+    var _this = {};
+
+    var getBCHDigit = function(data) {
+      var digit = 0;
+      while (data != 0) {
+        digit += 1;
+        data >>>= 1;
+      }
+      return digit;
+    };
+
+    _this.getBCHTypeInfo = function(data) {
+      var d = data << 10;
+      while (getBCHDigit(d) - getBCHDigit(G15) >= 0) {
+        d ^= (G15 << (getBCHDigit(d) - getBCHDigit(G15) ) );
+      }
+      return ( (data << 10) | d) ^ G15_MASK;
+    };
+
+    _this.getBCHTypeNumber = function(data) {
+      var d = data << 12;
+      while (getBCHDigit(d) - getBCHDigit(G18) >= 0) {
+        d ^= (G18 << (getBCHDigit(d) - getBCHDigit(G18) ) );
+      }
+      return (data << 12) | d;
+    };
+
+    _this.getPatternPosition = function(typeNumber) {
+      return PATTERN_POSITION_TABLE[typeNumber - 1];
+    };
+
+    _this.getMaskFunction = function(maskPattern) {
+
+      switch (maskPattern) {
+
+      case QRMaskPattern.PATTERN000 :
+        return function(i, j) { return (i + j) % 2 == 0; };
+      case QRMaskPattern.PATTERN001 :
+        return function(i, j) { return i % 2 == 0; };
+      case QRMaskPattern.PATTERN010 :
+        return function(i, j) { return j % 3 == 0; };
+      case QRMaskPattern.PATTERN011 :
+        return function(i, j) { return (i + j) % 3 == 0; };
+      case QRMaskPattern.PATTERN100 :
+        return function(i, j) { return (Math.floor(i / 2) + Math.floor(j / 3) ) % 2 == 0; };
+      case QRMaskPattern.PATTERN101 :
+        return function(i, j) { return (i * j) % 2 + (i * j) % 3 == 0; };
+      case QRMaskPattern.PATTERN110 :
+        return function(i, j) { return ( (i * j) % 2 + (i * j) % 3) % 2 == 0; };
+      case QRMaskPattern.PATTERN111 :
+        return function(i, j) { return ( (i * j) % 3 + (i + j) % 2) % 2 == 0; };
+
+      default :
+        throw 'bad maskPattern:' + maskPattern;
+      }
+    };
+
+    _this.getErrorCorrectPolynomial = function(errorCorrectLength) {
+      var a = qrPolynomial([1], 0);
+      for (var i = 0; i < errorCorrectLength; i += 1) {
+        a = a.multiply(qrPolynomial([1, QRMath.gexp(i)], 0) );
+      }
+      return a;
+    };
+
+    _this.getLengthInBits = function(mode, type) {
+
+      if (1 <= type && type < 10) {
+
+        // 1 - 9
+
+        switch(mode) {
+        case QRMode.MODE_NUMBER    : return 10;
+        case QRMode.MODE_ALPHA_NUM : return 9;
+        case QRMode.MODE_8BIT_BYTE : return 8;
+        case QRMode.MODE_KANJI     : return 8;
+        default :
+          throw 'mode:' + mode;
+        }
+
+      } else if (type < 27) {
+
+        // 10 - 26
+
+        switch(mode) {
+        case QRMode.MODE_NUMBER    : return 12;
+        case QRMode.MODE_ALPHA_NUM : return 11;
+        case QRMode.MODE_8BIT_BYTE : return 16;
+        case QRMode.MODE_KANJI     : return 10;
+        default :
+          throw 'mode:' + mode;
+        }
+
+      } else if (type < 41) {
+
+        // 27 - 40
+
+        switch(mode) {
+        case QRMode.MODE_NUMBER    : return 14;
+        case QRMode.MODE_ALPHA_NUM : return 13;
+        case QRMode.MODE_8BIT_BYTE : return 16;
+        case QRMode.MODE_KANJI     : return 12;
+        default :
+          throw 'mode:' + mode;
+        }
+
+      } else {
+        throw 'type:' + type;
+      }
+    };
+
+    _this.getLostPoint = function(qrcode) {
+
+      var moduleCount = qrcode.getModuleCount();
+
+      var lostPoint = 0;
+
+      // LEVEL1
+
+      for (var row = 0; row < moduleCount; row += 1) {
+        for (var col = 0; col < moduleCount; col += 1) {
+
+          var sameCount = 0;
+          var dark = qrcode.isDark(row, col);
+
+          for (var r = -1; r <= 1; r += 1) {
+
+            if (row + r < 0 || moduleCount <= row + r) {
+              continue;
+            }
+
+            for (var c = -1; c <= 1; c += 1) {
+
+              if (col + c < 0 || moduleCount <= col + c) {
+                continue;
+              }
+
+              if (r == 0 && c == 0) {
+                continue;
+              }
+
+              if (dark == qrcode.isDark(row + r, col + c) ) {
+                sameCount += 1;
+              }
+            }
+          }
+
+          if (sameCount > 5) {
+            lostPoint += (3 + sameCount - 5);
+          }
+        }
+      };
+
+      // LEVEL2
+
+      for (var row = 0; row < moduleCount - 1; row += 1) {
+        for (var col = 0; col < moduleCount - 1; col += 1) {
+          var count = 0;
+          if (qrcode.isDark(row, col) ) count += 1;
+          if (qrcode.isDark(row + 1, col) ) count += 1;
+          if (qrcode.isDark(row, col + 1) ) count += 1;
+          if (qrcode.isDark(row + 1, col + 1) ) count += 1;
+          if (count == 0 || count == 4) {
+            lostPoint += 3;
+          }
+        }
+      }
+
+      // LEVEL3
+
+      for (var row = 0; row < moduleCount; row += 1) {
+        for (var col = 0; col < moduleCount - 6; col += 1) {
+          if (qrcode.isDark(row, col)
+              && !qrcode.isDark(row, col + 1)
+              &&  qrcode.isDark(row, col + 2)
+              &&  qrcode.isDark(row, col + 3)
+              &&  qrcode.isDark(row, col + 4)
+              && !qrcode.isDark(row, col + 5)
+              &&  qrcode.isDark(row, col + 6) ) {
+            lostPoint += 40;
+          }
+        }
+      }
+
+      for (var col = 0; col < moduleCount; col += 1) {
+        for (var row = 0; row < moduleCount - 6; row += 1) {
+          if (qrcode.isDark(row, col)
+              && !qrcode.isDark(row + 1, col)
+              &&  qrcode.isDark(row + 2, col)
+              &&  qrcode.isDark(row + 3, col)
+              &&  qrcode.isDark(row + 4, col)
+              && !qrcode.isDark(row + 5, col)
+              &&  qrcode.isDark(row + 6, col) ) {
+            lostPoint += 40;
+          }
+        }
+      }
+
+      // LEVEL4
+
+      var darkCount = 0;
+
+      for (var col = 0; col < moduleCount; col += 1) {
+        for (var row = 0; row < moduleCount; row += 1) {
+          if (qrcode.isDark(row, col) ) {
+            darkCount += 1;
+          }
+        }
+      }
+
+      var ratio = Math.abs(100 * darkCount / moduleCount / moduleCount - 50) / 5;
+      lostPoint += ratio * 10;
+
+      return lostPoint;
+    };
+
+    return _this;
+  }();
+
+  //---------------------------------------------------------------------
+  // QRMath
+  //---------------------------------------------------------------------
+
+  var QRMath = function() {
+
+    var EXP_TABLE = new Array(256);
+    var LOG_TABLE = new Array(256);
+
+    // initialize tables
+    for (var i = 0; i < 8; i += 1) {
+      EXP_TABLE[i] = 1 << i;
+    }
+    for (var i = 8; i < 256; i += 1) {
+      EXP_TABLE[i] = EXP_TABLE[i - 4]
+        ^ EXP_TABLE[i - 5]
+        ^ EXP_TABLE[i - 6]
+        ^ EXP_TABLE[i - 8];
+    }
+    for (var i = 0; i < 255; i += 1) {
+      LOG_TABLE[EXP_TABLE[i] ] = i;
+    }
+
+    var _this = {};
+
+    _this.glog = function(n) {
+
+      if (n < 1) {
+        throw 'glog(' + n + ')';
+      }
+
+      return LOG_TABLE[n];
+    };
+
+    _this.gexp = function(n) {
+
+      while (n < 0) {
+        n += 255;
+      }
+
+      while (n >= 256) {
+        n -= 255;
+      }
+
+      return EXP_TABLE[n];
+    };
+
+    return _this;
+  }();
+
+  //---------------------------------------------------------------------
+  // qrPolynomial
+  //---------------------------------------------------------------------
+
+  function qrPolynomial(num, shift) {
+
+    if (typeof num.length == 'undefined') {
+      throw num.length + '/' + shift;
+    }
+
+    var _num = function() {
+      var offset = 0;
+      while (offset < num.length && num[offset] == 0) {
+        offset += 1;
+      }
+      var _num = new Array(num.length - offset + shift);
+      for (var i = 0; i < num.length - offset; i += 1) {
+        _num[i] = num[i + offset];
+      }
+      return _num;
+    }();
+
+    var _this = {};
+
+    _this.getAt = function(index) {
+      return _num[index];
+    };
+
+    _this.getLength = function() {
+      return _num.length;
+    };
+
+    _this.multiply = function(e) {
+
+      var num = new Array(_this.getLength() + e.getLength() - 1);
+
+      for (var i = 0; i < _this.getLength(); i += 1) {
+        for (var j = 0; j < e.getLength(); j += 1) {
+          num[i + j] ^= QRMath.gexp(QRMath.glog(_this.getAt(i) ) + QRMath.glog(e.getAt(j) ) );
+        }
+      }
+
+      return qrPolynomial(num, 0);
+    };
+
+    _this.mod = function(e) {
+
+      if (_this.getLength() - e.getLength() < 0) {
+        return _this;
+      }
+
+      var ratio = QRMath.glog(_this.getAt(0) ) - QRMath.glog(e.getAt(0) );
+
+      var num = new Array(_this.getLength() );
+      for (var i = 0; i < _this.getLength(); i += 1) {
+        num[i] = _this.getAt(i);
+      }
+
+      for (var i = 0; i < e.getLength(); i += 1) {
+        num[i] ^= QRMath.gexp(QRMath.glog(e.getAt(i) ) + ratio);
+      }
+
+      // recursive call
+      return qrPolynomial(num, 0).mod(e);
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // QRRSBlock
+  //---------------------------------------------------------------------
+
+  var QRRSBlock = function() {
+
+    var RS_BLOCK_TABLE = [
+
+      // L
+      // M
+      // Q
+      // H
+
+      // 1
+      [1, 26, 19],
+      [1, 26, 16],
+      [1, 26, 13],
+      [1, 26, 9],
+
+      // 2
+      [1, 44, 34],
+      [1, 44, 28],
+      [1, 44, 22],
+      [1, 44, 16],
+
+      // 3
+      [1, 70, 55],
+      [1, 70, 44],
+      [2, 35, 17],
+      [2, 35, 13],
+
+      // 4
+      [1, 100, 80],
+      [2, 50, 32],
+      [2, 50, 24],
+      [4, 25, 9],
+
+      // 5
+      [1, 134, 108],
+      [2, 67, 43],
+      [2, 33, 15, 2, 34, 16],
+      [2, 33, 11, 2, 34, 12],
+
+      // 6
+      [2, 86, 68],
+      [4, 43, 27],
+      [4, 43, 19],
+      [4, 43, 15],
+
+      // 7
+      [2, 98, 78],
+      [4, 49, 31],
+      [2, 32, 14, 4, 33, 15],
+      [4, 39, 13, 1, 40, 14],
+
+      // 8
+      [2, 121, 97],
+      [2, 60, 38, 2, 61, 39],
+      [4, 40, 18, 2, 41, 19],
+      [4, 40, 14, 2, 41, 15],
+
+      // 9
+      [2, 146, 116],
+      [3, 58, 36, 2, 59, 37],
+      [4, 36, 16, 4, 37, 17],
+      [4, 36, 12, 4, 37, 13],
+
+      // 10
+      [2, 86, 68, 2, 87, 69],
+      [4, 69, 43, 1, 70, 44],
+      [6, 43, 19, 2, 44, 20],
+      [6, 43, 15, 2, 44, 16],
+
+      // 11
+      [4, 101, 81],
+      [1, 80, 50, 4, 81, 51],
+      [4, 50, 22, 4, 51, 23],
+      [3, 36, 12, 8, 37, 13],
+
+      // 12
+      [2, 116, 92, 2, 117, 93],
+      [6, 58, 36, 2, 59, 37],
+      [4, 46, 20, 6, 47, 21],
+      [7, 42, 14, 4, 43, 15],
+
+      // 13
+      [4, 133, 107],
+      [8, 59, 37, 1, 60, 38],
+      [8, 44, 20, 4, 45, 21],
+      [12, 33, 11, 4, 34, 12],
+
+      // 14
+      [3, 145, 115, 1, 146, 116],
+      [4, 64, 40, 5, 65, 41],
+      [11, 36, 16, 5, 37, 17],
+      [11, 36, 12, 5, 37, 13],
+
+      // 15
+      [5, 109, 87, 1, 110, 88],
+      [5, 65, 41, 5, 66, 42],
+      [5, 54, 24, 7, 55, 25],
+      [11, 36, 12, 7, 37, 13],
+
+      // 16
+      [5, 122, 98, 1, 123, 99],
+      [7, 73, 45, 3, 74, 46],
+      [15, 43, 19, 2, 44, 20],
+      [3, 45, 15, 13, 46, 16],
+
+      // 17
+      [1, 135, 107, 5, 136, 108],
+      [10, 74, 46, 1, 75, 47],
+      [1, 50, 22, 15, 51, 23],
+      [2, 42, 14, 17, 43, 15],
+
+      // 18
+      [5, 150, 120, 1, 151, 121],
+      [9, 69, 43, 4, 70, 44],
+      [17, 50, 22, 1, 51, 23],
+      [2, 42, 14, 19, 43, 15],
+
+      // 19
+      [3, 141, 113, 4, 142, 114],
+      [3, 70, 44, 11, 71, 45],
+      [17, 47, 21, 4, 48, 22],
+      [9, 39, 13, 16, 40, 14],
+
+      // 20
+      [3, 135, 107, 5, 136, 108],
+      [3, 67, 41, 13, 68, 42],
+      [15, 54, 24, 5, 55, 25],
+      [15, 43, 15, 10, 44, 16],
+
+      // 21
+      [4, 144, 116, 4, 145, 117],
+      [17, 68, 42],
+      [17, 50, 22, 6, 51, 23],
+      [19, 46, 16, 6, 47, 17],
+
+      // 22
+      [2, 139, 111, 7, 140, 112],
+      [17, 74, 46],
+      [7, 54, 24, 16, 55, 25],
+      [34, 37, 13],
+
+      // 23
+      [4, 151, 121, 5, 152, 122],
+      [4, 75, 47, 14, 76, 48],
+      [11, 54, 24, 14, 55, 25],
+      [16, 45, 15, 14, 46, 16],
+
+      // 24
+      [6, 147, 117, 4, 148, 118],
+      [6, 73, 45, 14, 74, 46],
+      [11, 54, 24, 16, 55, 25],
+      [30, 46, 16, 2, 47, 17],
+
+      // 25
+      [8, 132, 106, 4, 133, 107],
+      [8, 75, 47, 13, 76, 48],
+      [7, 54, 24, 22, 55, 25],
+      [22, 45, 15, 13, 46, 16],
+
+      // 26
+      [10, 142, 114, 2, 143, 115],
+      [19, 74, 46, 4, 75, 47],
+      [28, 50, 22, 6, 51, 23],
+      [33, 46, 16, 4, 47, 17],
+
+      // 27
+      [8, 152, 122, 4, 153, 123],
+      [22, 73, 45, 3, 74, 46],
+      [8, 53, 23, 26, 54, 24],
+      [12, 45, 15, 28, 46, 16],
+
+      // 28
+      [3, 147, 117, 10, 148, 118],
+      [3, 73, 45, 23, 74, 46],
+      [4, 54, 24, 31, 55, 25],
+      [11, 45, 15, 31, 46, 16],
+
+      // 29
+      [7, 146, 116, 7, 147, 117],
+      [21, 73, 45, 7, 74, 46],
+      [1, 53, 23, 37, 54, 24],
+      [19, 45, 15, 26, 46, 16],
+
+      // 30
+      [5, 145, 115, 10, 146, 116],
+      [19, 75, 47, 10, 76, 48],
+      [15, 54, 24, 25, 55, 25],
+      [23, 45, 15, 25, 46, 16],
+
+      // 31
+      [13, 145, 115, 3, 146, 116],
+      [2, 74, 46, 29, 75, 47],
+      [42, 54, 24, 1, 55, 25],
+      [23, 45, 15, 28, 46, 16],
+
+      // 32
+      [17, 145, 115],
+      [10, 74, 46, 23, 75, 47],
+      [10, 54, 24, 35, 55, 25],
+      [19, 45, 15, 35, 46, 16],
+
+      // 33
+      [17, 145, 115, 1, 146, 116],
+      [14, 74, 46, 21, 75, 47],
+      [29, 54, 24, 19, 55, 25],
+      [11, 45, 15, 46, 46, 16],
+
+      // 34
+      [13, 145, 115, 6, 146, 116],
+      [14, 74, 46, 23, 75, 47],
+      [44, 54, 24, 7, 55, 25],
+      [59, 46, 16, 1, 47, 17],
+
+      // 35
+      [12, 151, 121, 7, 152, 122],
+      [12, 75, 47, 26, 76, 48],
+      [39, 54, 24, 14, 55, 25],
+      [22, 45, 15, 41, 46, 16],
+
+      // 36
+      [6, 151, 121, 14, 152, 122],
+      [6, 75, 47, 34, 76, 48],
+      [46, 54, 24, 10, 55, 25],
+      [2, 45, 15, 64, 46, 16],
+
+      // 37
+      [17, 152, 122, 4, 153, 123],
+      [29, 74, 46, 14, 75, 47],
+      [49, 54, 24, 10, 55, 25],
+      [24, 45, 15, 46, 46, 16],
+
+      // 38
+      [4, 152, 122, 18, 153, 123],
+      [13, 74, 46, 32, 75, 47],
+      [48, 54, 24, 14, 55, 25],
+      [42, 45, 15, 32, 46, 16],
+
+      // 39
+      [20, 147, 117, 4, 148, 118],
+      [40, 75, 47, 7, 76, 48],
+      [43, 54, 24, 22, 55, 25],
+      [10, 45, 15, 67, 46, 16],
+
+      // 40
+      [19, 148, 118, 6, 149, 119],
+      [18, 75, 47, 31, 76, 48],
+      [34, 54, 24, 34, 55, 25],
+      [20, 45, 15, 61, 46, 16]
+    ];
+
+    var qrRSBlock = function(totalCount, dataCount) {
+      var _this = {};
+      _this.totalCount = totalCount;
+      _this.dataCount = dataCount;
+      return _this;
+    };
+
+    var _this = {};
+
+    var getRsBlockTable = function(typeNumber, errorCorrectionLevel) {
+
+      switch(errorCorrectionLevel) {
+      case QRErrorCorrectionLevel.L :
+        return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 0];
+      case QRErrorCorrectionLevel.M :
+        return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 1];
+      case QRErrorCorrectionLevel.Q :
+        return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 2];
+      case QRErrorCorrectionLevel.H :
+        return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 3];
+      default :
+        return undefined;
+      }
+    };
+
+    _this.getRSBlocks = function(typeNumber, errorCorrectionLevel) {
+
+      var rsBlock = getRsBlockTable(typeNumber, errorCorrectionLevel);
+
+      if (typeof rsBlock == 'undefined') {
+        throw 'bad rs block @ typeNumber:' + typeNumber +
+            '/errorCorrectionLevel:' + errorCorrectionLevel;
+      }
+
+      var length = rsBlock.length / 3;
+
+      var list = [];
+
+      for (var i = 0; i < length; i += 1) {
+
+        var count = rsBlock[i * 3 + 0];
+        var totalCount = rsBlock[i * 3 + 1];
+        var dataCount = rsBlock[i * 3 + 2];
+
+        for (var j = 0; j < count; j += 1) {
+          list.push(qrRSBlock(totalCount, dataCount) );
+        }
+      }
+
+      return list;
+    };
+
+    return _this;
+  }();
+
+  //---------------------------------------------------------------------
+  // qrBitBuffer
+  //---------------------------------------------------------------------
+
+  var qrBitBuffer = function() {
+
+    var _buffer = [];
+    var _length = 0;
+
+    var _this = {};
+
+    _this.getBuffer = function() {
+      return _buffer;
+    };
+
+    _this.getAt = function(index) {
+      var bufIndex = Math.floor(index / 8);
+      return ( (_buffer[bufIndex] >>> (7 - index % 8) ) & 1) == 1;
+    };
+
+    _this.put = function(num, length) {
+      for (var i = 0; i < length; i += 1) {
+        _this.putBit( ( (num >>> (length - i - 1) ) & 1) == 1);
+      }
+    };
+
+    _this.getLengthInBits = function() {
+      return _length;
+    };
+
+    _this.putBit = function(bit) {
+
+      var bufIndex = Math.floor(_length / 8);
+      if (_buffer.length <= bufIndex) {
+        _buffer.push(0);
+      }
+
+      if (bit) {
+        _buffer[bufIndex] |= (0x80 >>> (_length % 8) );
+      }
+
+      _length += 1;
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qrNumber
+  //---------------------------------------------------------------------
+
+  var qrNumber = function(data) {
+
+    var _mode = QRMode.MODE_NUMBER;
+    var _data = data;
+
+    var _this = {};
+
+    _this.getMode = function() {
+      return _mode;
+    };
+
+    _this.getLength = function(buffer) {
+      return _data.length;
+    };
+
+    _this.write = function(buffer) {
+
+      var data = _data;
+
+      var i = 0;
+
+      while (i + 2 < data.length) {
+        buffer.put(strToNum(data.substring(i, i + 3) ), 10);
+        i += 3;
+      }
+
+      if (i < data.length) {
+        if (data.length - i == 1) {
+          buffer.put(strToNum(data.substring(i, i + 1) ), 4);
+        } else if (data.length - i == 2) {
+          buffer.put(strToNum(data.substring(i, i + 2) ), 7);
+        }
+      }
+    };
+
+    var strToNum = function(s) {
+      var num = 0;
+      for (var i = 0; i < s.length; i += 1) {
+        num = num * 10 + chatToNum(s.charAt(i) );
+      }
+      return num;
+    };
+
+    var chatToNum = function(c) {
+      if ('0' <= c && c <= '9') {
+        return c.charCodeAt(0) - '0'.charCodeAt(0);
+      }
+      throw 'illegal char :' + c;
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qrAlphaNum
+  //---------------------------------------------------------------------
+
+  var qrAlphaNum = function(data) {
+
+    var _mode = QRMode.MODE_ALPHA_NUM;
+    var _data = data;
+
+    var _this = {};
+
+    _this.getMode = function() {
+      return _mode;
+    };
+
+    _this.getLength = function(buffer) {
+      return _data.length;
+    };
+
+    _this.write = function(buffer) {
+
+      var s = _data;
+
+      var i = 0;
+
+      while (i + 1 < s.length) {
+        buffer.put(
+          getCode(s.charAt(i) ) * 45 +
+          getCode(s.charAt(i + 1) ), 11);
+        i += 2;
+      }
+
+      if (i < s.length) {
+        buffer.put(getCode(s.charAt(i) ), 6);
+      }
+    };
+
+    var getCode = function(c) {
+
+      if ('0' <= c && c <= '9') {
+        return c.charCodeAt(0) - '0'.charCodeAt(0);
+      } else if ('A' <= c && c <= 'Z') {
+        return c.charCodeAt(0) - 'A'.charCodeAt(0) + 10;
+      } else {
+        switch (c) {
+        case ' ' : return 36;
+        case '$' : return 37;
+        case '%' : return 38;
+        case '*' : return 39;
+        case '+' : return 40;
+        case '-' : return 41;
+        case '.' : return 42;
+        case '/' : return 43;
+        case ':' : return 44;
+        default :
+          throw 'illegal char :' + c;
+        }
+      }
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qr8BitByte
+  //---------------------------------------------------------------------
+
+  var qr8BitByte = function(data) {
+
+    var _mode = QRMode.MODE_8BIT_BYTE;
+    var _data = data;
+    var _bytes = qrcode.stringToBytes(data);
+
+    var _this = {};
+
+    _this.getMode = function() {
+      return _mode;
+    };
+
+    _this.getLength = function(buffer) {
+      return _bytes.length;
+    };
+
+    _this.write = function(buffer) {
+      for (var i = 0; i < _bytes.length; i += 1) {
+        buffer.put(_bytes[i], 8);
+      }
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qrKanji
+  //---------------------------------------------------------------------
+
+  var qrKanji = function(data) {
+
+    var _mode = QRMode.MODE_KANJI;
+    var _data = data;
+
+    var stringToBytes = qrcode.stringToBytesFuncs['SJIS'];
+    if (!stringToBytes) {
+      throw 'sjis not supported.';
+    }
+    !function(c, code) {
+      // self test for sjis support.
+      var test = stringToBytes(c);
+      if (test.length != 2 || ( (test[0] << 8) | test[1]) != code) {
+        throw 'sjis not supported.';
+      }
+    }('\u53cb', 0x9746);
+
+    var _bytes = stringToBytes(data);
+
+    var _this = {};
+
+    _this.getMode = function() {
+      return _mode;
+    };
+
+    _this.getLength = function(buffer) {
+      return ~~(_bytes.length / 2);
+    };
+
+    _this.write = function(buffer) {
+
+      var data = _bytes;
+
+      var i = 0;
+
+      while (i + 1 < data.length) {
+
+        var c = ( (0xff & data[i]) << 8) | (0xff & data[i + 1]);
+
+        if (0x8140 <= c && c <= 0x9FFC) {
+          c -= 0x8140;
+        } else if (0xE040 <= c && c <= 0xEBBF) {
+          c -= 0xC140;
+        } else {
+          throw 'illegal char at ' + (i + 1) + '/' + c;
+        }
+
+        c = ( (c >>> 8) & 0xff) * 0xC0 + (c & 0xff);
+
+        buffer.put(c, 13);
+
+        i += 2;
+      }
+
+      if (i < data.length) {
+        throw 'illegal char at ' + (i + 1);
+      }
+    };
+
+    return _this;
+  };
+
+  //=====================================================================
+  // GIF Support etc.
+  //
+
+  //---------------------------------------------------------------------
+  // byteArrayOutputStream
+  //---------------------------------------------------------------------
+
+  var byteArrayOutputStream = function() {
+
+    var _bytes = [];
+
+    var _this = {};
+
+    _this.writeByte = function(b) {
+      _bytes.push(b & 0xff);
+    };
+
+    _this.writeShort = function(i) {
+      _this.writeByte(i);
+      _this.writeByte(i >>> 8);
+    };
+
+    _this.writeBytes = function(b, off, len) {
+      off = off || 0;
+      len = len || b.length;
+      for (var i = 0; i < len; i += 1) {
+        _this.writeByte(b[i + off]);
+      }
+    };
+
+    _this.writeString = function(s) {
+      for (var i = 0; i < s.length; i += 1) {
+        _this.writeByte(s.charCodeAt(i) );
+      }
+    };
+
+    _this.toByteArray = function() {
+      return _bytes;
+    };
+
+    _this.toString = function() {
+      var s = '';
+      s += '[';
+      for (var i = 0; i < _bytes.length; i += 1) {
+        if (i > 0) {
+          s += ',';
+        }
+        s += _bytes[i];
+      }
+      s += ']';
+      return s;
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // base64EncodeOutputStream
+  //---------------------------------------------------------------------
+
+  var base64EncodeOutputStream = function() {
+
+    var _buffer = 0;
+    var _buflen = 0;
+    var _length = 0;
+    var _base64 = '';
+
+    var _this = {};
+
+    var writeEncoded = function(b) {
+      _base64 += String.fromCharCode(encode(b & 0x3f) );
+    };
+
+    var encode = function(n) {
+      if (n < 0) {
+        // error.
+      } else if (n < 26) {
+        return 0x41 + n;
+      } else if (n < 52) {
+        return 0x61 + (n - 26);
+      } else if (n < 62) {
+        return 0x30 + (n - 52);
+      } else if (n == 62) {
+        return 0x2b;
+      } else if (n == 63) {
+        return 0x2f;
+      }
+      throw 'n:' + n;
+    };
+
+    _this.writeByte = function(n) {
+
+      _buffer = (_buffer << 8) | (n & 0xff);
+      _buflen += 8;
+      _length += 1;
+
+      while (_buflen >= 6) {
+        writeEncoded(_buffer >>> (_buflen - 6) );
+        _buflen -= 6;
+      }
+    };
+
+    _this.flush = function() {
+
+      if (_buflen > 0) {
+        writeEncoded(_buffer << (6 - _buflen) );
+        _buffer = 0;
+        _buflen = 0;
+      }
+
+      if (_length % 3 != 0) {
+        // padding
+        var padlen = 3 - _length % 3;
+        for (var i = 0; i < padlen; i += 1) {
+          _base64 += '=';
+        }
+      }
+    };
+
+    _this.toString = function() {
+      return _base64;
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // base64DecodeInputStream
+  //---------------------------------------------------------------------
+
+  var base64DecodeInputStream = function(str) {
+
+    var _str = str;
+    var _pos = 0;
+    var _buffer = 0;
+    var _buflen = 0;
+
+    var _this = {};
+
+    _this.read = function() {
+
+      while (_buflen < 8) {
+
+        if (_pos >= _str.length) {
+          if (_buflen == 0) {
+            return -1;
+          }
+          throw 'unexpected end of file./' + _buflen;
+        }
+
+        var c = _str.charAt(_pos);
+        _pos += 1;
+
+        if (c == '=') {
+          _buflen = 0;
+          return -1;
+        } else if (c.match(/^\s$/) ) {
+          // ignore if whitespace.
+          continue;
+        }
+
+        _buffer = (_buffer << 6) | decode(c.charCodeAt(0) );
+        _buflen += 6;
+      }
+
+      var n = (_buffer >>> (_buflen - 8) ) & 0xff;
+      _buflen -= 8;
+      return n;
+    };
+
+    var decode = function(c) {
+      if (0x41 <= c && c <= 0x5a) {
+        return c - 0x41;
+      } else if (0x61 <= c && c <= 0x7a) {
+        return c - 0x61 + 26;
+      } else if (0x30 <= c && c <= 0x39) {
+        return c - 0x30 + 52;
+      } else if (c == 0x2b) {
+        return 62;
+      } else if (c == 0x2f) {
+        return 63;
+      } else {
+        throw 'c:' + c;
+      }
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // gifImage (B/W)
+  //---------------------------------------------------------------------
+
+  var gifImage = function(width, height) {
+
+    var _width = width;
+    var _height = height;
+    var _data = new Array(width * height);
+
+    var _this = {};
+
+    _this.setPixel = function(x, y, pixel) {
+      _data[y * _width + x] = pixel;
+    };
+
+    _this.write = function(out) {
+
+      //---------------------------------
+      // GIF Signature
+
+      out.writeString('GIF87a');
+
+      //---------------------------------
+      // Screen Descriptor
+
+      out.writeShort(_width);
+      out.writeShort(_height);
+
+      out.writeByte(0x80); // 2bit
+      out.writeByte(0);
+      out.writeByte(0);
+
+      //---------------------------------
+      // Global Color Map
+
+      // black
+      out.writeByte(0x00);
+      out.writeByte(0x00);
+      out.writeByte(0x00);
+
+      // white
+      out.writeByte(0xff);
+      out.writeByte(0xff);
+      out.writeByte(0xff);
+
+      //---------------------------------
+      // Image Descriptor
+
+      out.writeString(',');
+      out.writeShort(0);
+      out.writeShort(0);
+      out.writeShort(_width);
+      out.writeShort(_height);
+      out.writeByte(0);
+
+      //---------------------------------
+      // Local Color Map
+
+      //---------------------------------
+      // Raster Data
+
+      var lzwMinCodeSize = 2;
+      var raster = getLZWRaster(lzwMinCodeSize);
+
+      out.writeByte(lzwMinCodeSize);
+
+      var offset = 0;
+
+      while (raster.length - offset > 255) {
+        out.writeByte(255);
+        out.writeBytes(raster, offset, 255);
+        offset += 255;
+      }
+
+      out.writeByte(raster.length - offset);
+      out.writeBytes(raster, offset, raster.length - offset);
+      out.writeByte(0x00);
+
+      //---------------------------------
+      // GIF Terminator
+      out.writeString(';');
+    };
+
+    var bitOutputStream = function(out) {
+
+      var _out = out;
+      var _bitLength = 0;
+      var _bitBuffer = 0;
+
+      var _this = {};
+
+      _this.write = function(data, length) {
+
+        if ( (data >>> length) != 0) {
+          throw 'length over';
+        }
+
+        while (_bitLength + length >= 8) {
+          _out.writeByte(0xff & ( (data << _bitLength) | _bitBuffer) );
+          length -= (8 - _bitLength);
+          data >>>= (8 - _bitLength);
+          _bitBuffer = 0;
+          _bitLength = 0;
+        }
+
+        _bitBuffer = (data << _bitLength) | _bitBuffer;
+        _bitLength = _bitLength + length;
+      };
+
+      _this.flush = function() {
+        if (_bitLength > 0) {
+          _out.writeByte(_bitBuffer);
+        }
+      };
+
+      return _this;
+    };
+
+    var getLZWRaster = function(lzwMinCodeSize) {
+
+      var clearCode = 1 << lzwMinCodeSize;
+      var endCode = (1 << lzwMinCodeSize) + 1;
+      var bitLength = lzwMinCodeSize + 1;
+
+      // Setup LZWTable
+      var table = lzwTable();
+
+      for (var i = 0; i < clearCode; i += 1) {
+        table.add(String.fromCharCode(i) );
+      }
+      table.add(String.fromCharCode(clearCode) );
+      table.add(String.fromCharCode(endCode) );
+
+      var byteOut = byteArrayOutputStream();
+      var bitOut = bitOutputStream(byteOut);
+
+      // clear code
+      bitOut.write(clearCode, bitLength);
+
+      var dataIndex = 0;
+
+      var s = String.fromCharCode(_data[dataIndex]);
+      dataIndex += 1;
+
+      while (dataIndex < _data.length) {
+
+        var c = String.fromCharCode(_data[dataIndex]);
+        dataIndex += 1;
+
+        if (table.contains(s + c) ) {
+
+          s = s + c;
+
+        } else {
+
+          bitOut.write(table.indexOf(s), bitLength);
+
+          if (table.size() < 0xfff) {
+
+            if (table.size() == (1 << bitLength) ) {
+              bitLength += 1;
+            }
+
+            table.add(s + c);
+          }
+
+          s = c;
+        }
+      }
+
+      bitOut.write(table.indexOf(s), bitLength);
+
+      // end code
+      bitOut.write(endCode, bitLength);
+
+      bitOut.flush();
+
+      return byteOut.toByteArray();
+    };
+
+    var lzwTable = function() {
+
+      var _map = {};
+      var _size = 0;
+
+      var _this = {};
+
+      _this.add = function(key) {
+        if (_this.contains(key) ) {
+          throw 'dup key:' + key;
+        }
+        _map[key] = _size;
+        _size += 1;
+      };
+
+      _this.size = function() {
+        return _size;
+      };
+
+      _this.indexOf = function(key) {
+        return _map[key];
+      };
+
+      _this.contains = function(key) {
+        return typeof _map[key] != 'undefined';
+      };
+
+      return _this;
+    };
+
+    return _this;
+  };
+
+  var createDataURL = function(width, height, getPixel) {
+    var gif = gifImage(width, height);
+    for (var y = 0; y < height; y += 1) {
+      for (var x = 0; x < width; x += 1) {
+        gif.setPixel(x, y, getPixel(x, y) );
+      }
+    }
+
+    var b = byteArrayOutputStream();
+    gif.write(b);
+
+    var base64 = base64EncodeOutputStream();
+    var bytes = b.toByteArray();
+    for (var i = 0; i < bytes.length; i += 1) {
+      base64.writeByte(bytes[i]);
+    }
+    base64.flush();
+
+    return 'data:image/gif;base64,' + base64;
+  };
+
+  //---------------------------------------------------------------------
+  // returns qrcode function.
+
+  return qrcode;
+}();
+
+// multibyte support
+!function() {
+
+  qrcode.stringToBytesFuncs['UTF-8'] = function(s) {
+    // http://stackoverflow.com/questions/18729405/how-to-convert-utf8-string-to-byte-array
+    function toUTF8Array(str) {
+      var utf8 = [];
+      for (var i=0; i < str.length; i++) {
+        var charcode = str.charCodeAt(i);
+        if (charcode < 0x80) utf8.push(charcode);
+        else if (charcode < 0x800) {
+          utf8.push(0xc0 | (charcode >> 6),
+              0x80 | (charcode & 0x3f));
+        }
+        else if (charcode < 0xd800 || charcode >= 0xe000) {
+          utf8.push(0xe0 | (charcode >> 12),
+              0x80 | ((charcode>>6) & 0x3f),
+              0x80 | (charcode & 0x3f));
+        }
+        // surrogate pair
+        else {
+          i++;
+          // UTF-16 encodes 0x10000-0x10FFFF by
+          // subtracting 0x10000 and splitting the
+          // 20 bits of 0x0-0xFFFFF into two halves
+          charcode = 0x10000 + (((charcode & 0x3ff)<<10)
+            | (str.charCodeAt(i) & 0x3ff));
+          utf8.push(0xf0 | (charcode >>18),
+              0x80 | ((charcode>>12) & 0x3f),
+              0x80 | ((charcode>>6) & 0x3f),
+              0x80 | (charcode & 0x3f));
+        }
+      }
+      return utf8;
+    }
+    return toUTF8Array(s);
+  };
+
+}();
+
+window.qrcode = qrcode;
+
+</script>
+
+<script>
+/* ================= 数据层 ================= */
+const LS_KEY='campus_system_v1';
+const STORE={classes:[],students:[],teachers:[],courses:[],dormitories:[],scores:[],attendance:[],classLogs:[],feed:[],users:[]};
+let DB=(function(){
+  const d=load();
+  if(d&&d.courses){
+    d.courses=migrateCourses(d.courses);
+    if(!Array.isArray(d.users)||!d.users.length){
+      d.users=[{id:'uadmin',no:'admin',name:'系统管理员',role:'admin',refId:'',password:'admin123',remark:'管理员账号'},
+        ...(d.teachers||[]).map(t=>({id:'ut_'+t.id,no:t.no,name:t.name,role:'teacher',refId:t.id,password:'123456',remark:''})),
+        ...(d.students||[]).map(s=>({id:'us_'+s.id,no:s.no,name:s.name,role:'student',refId:s.id,password:'123456',remark:''}))];
+    }
+    localStorage.setItem(LS_KEY,JSON.stringify(d));
+  }
+  return d;
+})();
+function load(){
+  try{
+    const raw=localStorage.getItem(LS_KEY);
+    if(raw){const d=JSON.parse(raw);return Object.assign({},STORE,{feed:d.feed||[]},d);}
+  }catch(e){}
+  return null;
+}
+/* 旧数据兼容：把老课程 schedule 文本迁移为 sessions 结构 */
+function migrateCourses(arr){
+  if(!Array.isArray(arr))return arr;
+  return arr.map(c=>{
+    if(Array.isArray(c.sessions)&&c.sessions.length)return c;
+    if(c.schedule){
+      const sessions=[];
+      const m=c.schedule.match(/(周[一二三四五六日])[^\d]*(\d+)[-—]?(\d+)?节?/g);
+      if(m){m.forEach(txt=>{
+        const dm=txt.match(/周([一二三四五六日])/),pm=txt.match(/(\d+)/);
+        if(dm&&pm){const dayMap={'一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'日':7};sessions.push({id:uid('ses'),day:dayMap[dm[1]],period:parseInt(pm[1]),classIds:[],room:''});}
+      });}
+      if(sessions.length)return Object.assign({},c,{sessions});
+    }
+    return c;
+  });
+}
+function save(){localStorage.setItem(LS_KEY,JSON.stringify(DB));}
+function uid(p){return p+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+function today(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+/* ================= 账号体系 ================= */
+const SESSION_KEY='campus_session';
+let CURRENT_USER=null;
+function userById(id){return (DB.users||[]).find(u=>u.id===id)||null;}
+function userByNo(no){return (DB.users||[]).find(u=>u.no===no)||null;}
+function userForRef(refId,role){return (DB.users||[]).find(u=>u.refId===refId&&u.role===role)||null;}
+function currentUser(){return CURRENT_USER;}
+function showLoginPage(){
+  document.getElementById('loginPage').style.display='flex';
+  document.getElementById('loginNo').focus();
+}
+function hideLoginPage(){document.getElementById('loginPage').style.display='none';}
+function doLogin(){
+  const no=document.getElementById('loginNo').value.trim();
+  const pwd=document.getElementById('loginPwd').value;
+  const err=document.getElementById('loginErr');
+  if(!no||!pwd){err.textContent='请输入账号和密码';return;}
+  const u=userByNo(no);
+  if(!u){err.textContent='账号不存在';return;}
+  if(u.password!==pwd){err.textContent='密码错误';return;}
+  err.textContent='';
+  CURRENT_USER=u;
+  localStorage.setItem(SESSION_KEY,JSON.stringify(u));
+  if(LANDING_PENDING&&LANDING_CLASS_ID){
+    LANDING_PENDING=false;
+    landingShow();
+    landingCheckLogin();
+    return;
+  }
+  afterLogin();
+}
+function restoreSession(){
+  try{
+    const raw=localStorage.getItem(SESSION_KEY);
+    if(raw){
+      const u=JSON.parse(raw);
+      const live=userById(u.id);
+      if(live){CURRENT_USER=live;return true;}
+    }
+  }catch(e){}
+  return false;
+}
+function doLogout(){
+  CURRENT_USER=null;
+  localStorage.removeItem(SESSION_KEY);
+  location.hash='';
+  showLoginPage();
+}
+function afterLogin(){
+  const u=CURRENT_USER;
+  if(u.role==='admin'){
+    hideLoginPage();
+    document.querySelector('.sidebar').style.display='';
+    document.querySelector('.main').style.display='';
+    document.getElementById('portal-teacher').classList.remove('active');
+    document.getElementById('portal-student').classList.remove('active');
+    renderAll();
+    if(location.hash)history.replaceState(null,'',location.pathname+location.search);
+  }else if(u.role==='teacher'){
+    document.getElementById('loginPage').style.display='none';
+    document.querySelector('.sidebar').style.display='none';
+    document.querySelector('.main').style.display='';
+    document.getElementById('portal-student').classList.remove('active');
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById('portal-teacher').classList.add('active');
+    renderTeacherPortal();
+  }else if(u.role==='student'){
+    document.getElementById('loginPage').style.display='none';
+    document.querySelector('.sidebar').style.display='none';
+    document.querySelector('.main').style.display='';
+    document.getElementById('portal-teacher').classList.remove('active');
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById('portal-student').classList.add('active');
+    renderStudentPortal();
+  }
+}
+/* 教师工作台 */
+function renderTeacherPortal(){
+  const u=CURRENT_USER;if(!u)return;
+  const t=DB.teachers.find(x=>x.id===u.refId);
+  document.getElementById('t_name').textContent=(t?t.name:u.name)+' · 教师';
+  document.getElementById('t_sub').textContent=(t?(t.subject||'')+'教师 · '+(t.title||''):'教师工作台');
+  const myCourses=DB.courses.filter(c=>c.teacherId===u.refId);
+  document.getElementById('t_courseCount').textContent=myCourses.length;
+  const clsIds=new Set();myCourses.forEach(c=>classIdsForCourse(c.id).forEach(x=>clsIds.add(x)));
+  document.getElementById('t_classCount').textContent=clsIds.size;
+  const logs=(DB.classLogs||[]).filter(l=>l.teacherId===u.refId);
+  document.getElementById('t_punchCount').textContent=logs.length;
+  document.getElementById('t_todayPunch').textContent=logs.filter(l=>l.date===today()).length;
+  const todayIdx=new Date().getDay();const dayNum=todayIdx===0?7:todayIdx;
+  const todayCourses=myCourses.filter(c=>(c.sessions||[]).some(se=>se.day===dayNum));
+  document.getElementById('t_todayCourses').innerHTML=todayCourses.length?todayCourses.map(c=>{
+    const ses=(c.sessions||[]).filter(se=>se.day===dayNum).map(se=>`第${se.period}节 ${se.room||''} ${(se.classIds||[]).map(id=>className(id)).join('、')}`).join(' · ');
+    return `<div class="p-item"><div><div class="pi-t">${esc(c.name)}</div><div class="pi-d">${esc(ses)}</div></div><span class="tag blue">今天</span></div>`;
+  }).join(''):'<div class="empty" style="grid-column:1/-1;padding:24px 0"><span class="ic">📅</span>今天没有您的课程</div>';
+  document.getElementById('t_myCourses').innerHTML=myCourses.length?myCourses.map(c=>{
+    const n=(c.sessions||[]).reduce((sum,se)=>sum+(se.classIds||[]).length,0);
+    return `<div class="p-item"><div><div class="pi-t">${esc(c.name)}</div><div class="pi-d">${esc(c.code||'')} · ${n} 个班次</div></div><span class="tag gray">${esc(c.credit||'')}学分</span></div>`;
+  }).join(''):'<div class="empty" style="grid-column:1/-1;padding:24px 0"><span class="ic">📚</span>暂无课程</div>';
+  const logsAll=(DB.classLogs||[]).filter(l=>l.teacherId===u.refId).slice().reverse();
+  document.getElementById('t_myPunch').innerHTML=logsAll.length?`<table><thead><tr><th>日期</th><th>时间</th><th>班级</th><th>课程</th></tr></thead><tbody>${logsAll.map(l=>`<tr><td>${fmtDate(l.date)}</td><td>${esc(l.time||'—')}</td><td>${className(l.classId)}</td><td>${esc(l.courseName||'—')}</td></tr>`).join('')}</tbody></table>`:'<div class="empty"><span class="ic">🕐</span>暂无打卡记录</div>';
+}
+function logsByTeacher(teacherId){return (DB.classLogs||[]).filter(l=>l.teacherId===teacherId);}
+/* 学生工作台 */
+function renderStudentPortal(){
+  const u=CURRENT_USER;if(!u)return;
+  const s=DB.students.find(x=>x.id===u.refId);
+  if(!s){toast('学生信息不存在');return;}
+  const cls=classById(s.classId);
+  document.getElementById('s_name').textContent=s.name;
+  document.getElementById('s_sub').textContent=(cls.name||'未分班')+' · '+s.no;
+  const todayIdx=new Date().getDay();const dayNum=todayIdx===0?7:todayIdx;
+  const todaySessions=(DB.courses||[]).flatMap(c=>(c.sessions||[]).filter(se=>se.day===dayNum&&(se.classIds||[]).includes(s.classId)).map(se=>({course:c,se})));
+  document.getElementById('s_todayCourses').textContent=todaySessions.length;
+  const myCourses=(DB.courses||[]).filter(c=>(c.sessions||[]).some(se=>(se.classIds||[]).includes(s.classId)));
+  document.getElementById('s_weekCourses').textContent=myCourses.length;
+  const myScores=(DB.scores||[]).filter(x=>x.studentId===s.id);
+  const avg=myScores.length?(myScores.reduce((a,x)=>a+x.score,0)/myScores.length).toFixed(1):'—';
+  document.getElementById('s_scoreAvg').textContent=avg;
+  const signed=DB.attendance.find(a=>a.studentId===s.id&&a.date===today()&&a.source==='qr');
+  const attEl=document.getElementById('s_attToday');
+  attEl.textContent=signed?'已签到':'未签到';
+  attEl.style.color=signed?'var(--success)':'var(--warning)';
+  document.getElementById('s_todayList').innerHTML=todaySessions.length?todaySessions.map(x=>`<div class="p-item"><div><div class="pi-t">${esc(x.course.name)}</div><div class="pi-d">第${x.se.period}节 · ${esc(x.se.room||'')}</div></div><span class="tag blue">${esc(x.course.teacherName||'')}</span></div>`).join(''):'<div class="empty" style="grid-column:1/-1;padding:24px 0"><span class="ic">📅</span>今天没有课程</div>';
+  const atts=(DB.attendance||[]).filter(a=>a.studentId===s.id).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  document.getElementById('s_myAtt').innerHTML=atts.length?`<table><thead><tr><th>日期</th><th>状态</th><th>备注</th></tr></thead><tbody>${atts.map(a=>`<tr><td>${fmtDate(a.date)}</td><td><span class="tag ${a.status==='出勤'?'green':a.status==='迟到'||a.status==='早退'?'orange':a.status==='请假'?'gray':'red'}">${esc(a.status)}</span></td><td>${esc(a.remark||'—')}</td></tr>`).join('')}</tbody></table>`:'<div class="empty"><span class="ic">🕐</span>暂无考勤记录</div>';
+  const scoreRows=myScores.slice().sort((a,b)=>String(b.semester||'').localeCompare(String(a.semester||'')));
+  document.getElementById('s_myScores').innerHTML=scoreRows.length?`<table><thead><tr><th>课程</th><th>学期</th><th>考试</th><th>成绩</th></tr></thead><tbody>${scoreRows.map(x=>{const c=DB.courses.find(c=>c.id===x.courseId);return `<tr><td>${c?esc(c.name):'—'}</td><td>${esc(x.semester||'—')}</td><td>${esc(x.examType||'—')}</td><td><span class="tag ${x.score>=90?'green':x.score>=60?'blue':'red'}">${esc(x.score)}</span></td></tr>`;}).join('')}</tbody></table>`:'<div class="empty"><span class="ic">📝</span>暂无成绩记录</div>';
+}
+/* 我的专属二维码 */
+function showMyQr(role){
+  const u=CURRENT_USER;if(!u)return;
+  const t=role==='teacher'?DB.teachers.find(t=>t.id===u.refId):null;
+  const name=t?t.name:u.name;
+  const base=location.href.split('#')[0];
+  const url=base+'#/u/'+u.id;
+  const qr=qrcode(0,'M');qr.addData(url);qr.make();
+  classTitle.textContent='我的专属二维码';
+  classBody.innerHTML=`
+    <div class="qr-box">
+      <div class="qr-canvas">${qr.createImgTag(5,12)}</div>
+      <div style="font-size:15px;font-weight:600;color:var(--gray-800)">${esc(name)}</div>
+      <div style="font-size:12px;color:var(--gray-400)">${role==='teacher'?'教师账号':'学生账号'} · ${esc(u.no)}</div>
+      <div class="qr-actions">
+        <button class="btn" onclick="downloadQr()">⬇ 下载二维码</button>
+        <button class="btn" onclick="copyQrUrl()">🔗 复制链接</button>
+      </div>
+      <div class="qr-hint">学生扫码：查看今日课程并一键签到（仅本人）<br>教师扫码：查看我的课程并上课打卡（仅本人）</div>
+    </div>`;
+  classFoot.innerHTML='<button class="btn primary" onclick="closeModal()">关闭</button>';
+  window._qrDataUrl=qr.createDataURL(5,12);
+  showModal();
+}
+function downloadQr(){
+  const a=document.createElement('a');
+  a.href=window._qrDataUrl||'';
+  a.download='我的专属二维码.png';
+  document.body.appendChild(a);a.click();a.remove();
+}
+function copyQrUrl(){
+  const base=location.href.split('#')[0];
+  const url=base+'#/u/'+CURRENT_USER.id;
+  if(navigator.clipboard){navigator.clipboard.writeText(url).then(()=>toast('链接已复制')).catch(()=>toast('复制失败'));}
+  else{toast('复制失败：请手动复制');}
+}
+/* ================= 账号管理（管理员） ================= */
+function syncAllAccounts(){
+  if(!Array.isArray(DB.users))DB.users=[];
+  const admin=(DB.users||[]).find(u=>u.role==='admin')||{id:'uadmin',no:'admin',name:'系统管理员',role:'admin',refId:'',password:'admin123',remark:'管理员账号'};
+  const list=[admin];
+  (DB.teachers||[]).forEach(t=>{
+    let u=DB.users.find(x=>x.role==='teacher'&&x.refId===t.id);
+    if(!u){u={id:'ut_'+t.id,no:t.no,name:t.name,role:'teacher',refId:t.id,password:'123456',remark:''};DB.users.push(u);}
+    else{u.no=t.no;u.name=t.name;u.refId=t.id;}
+  });
+  (DB.students||[]).forEach(s=>{
+    let u=DB.users.find(x=>x.role==='student'&&x.refId===s.id);
+    if(!u){u={id:'us_'+s.id,no:s.no,name:s.name,role:'student',refId:s.id,password:'123456',remark:''};DB.users.push(u);}
+    else{u.no=s.no;u.name=s.name;u.refId=s.id;}
+  });
+  save();renderUsers();toast('账号已同步');
+}
+function renderUsers(){
+  const kw=(document.getElementById('userSearch').value||'').toLowerCase();
+  const rf=document.getElementById('userRoleFilter').value;
+  const list=(DB.users||[]).filter(u=>!kw||(u.name+u.no).toLowerCase().includes(kw)).filter(u=>!rf||u.role===rf);
+  const tb=document.getElementById('userBody');
+  const roleMap={admin:'系统管理员',teacher:'教师',student:'学生'};
+  const roleTag={admin:'tag blue',teacher:'tag green',student:'tag orange'};
+  if(!list.length){tb.innerHTML='<tr><td colspan="6"><div class="empty"><span class="ic">🔐</span>暂无账号</div></td></tr>';return;}
+  tb.innerHTML=list.map(u=>{
+    const ref=u.role==='teacher'?(DB.teachers.find(t=>t.id===u.refId)||{}).name:u.role==='student'?(DB.students.find(s=>s.id===u.refId)||{}).name:'—';
+    return `<tr>
+      <td><span class="td-name">${esc(u.no)}</span></td>
+      <td>${esc(u.name)}</td>
+      <td><span class="tag ${roleTag[u.role]||'tag gray'}">${roleMap[u.role]||esc(u.role)}</span></td>
+      <td>${esc(ref)}</td>
+      <td>${esc(u.password)}</td>
+      <td><div class="actions">
+        <button class="btn sm edit" onclick="openUserModal('${u.id}')">重置密码</button>
+        <button class="btn sm danger" onclick="delUser('${u.id}')">删除</button>
+      </div></td></tr>`;
+  }).join('');
+}
+function openUserModal(id){
+  const u=DB.users.find(x=>x.id===id);
+  if(!u){toast('账号不存在');return;}
+  classTitle.textContent='重置密码：'+u.name+'（'+u.no+'）';
+  classBody.innerHTML=`
+    <div class="form-grid">
+      <div class="form-item full"><label>新密码</label><input id="f_newPwd" placeholder="请输入新密码" value="123456"></div>
+    </div>`;
+  classFoot.innerHTML=`<button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="saveUserPwd('${id}')">保存</button>`;
+  showModal();
+}
+function saveUserPwd(id){
+  const pwd=document.getElementById('f_newPwd').value.trim();
+  if(!pwd){toast('密码不能为空');return;}
+  const u=DB.users.find(x=>x.id===id);
+  if(!u){toast('账号不存在');return;}
+  u.password=pwd;save();closeModal();renderUsers();toast('密码已更新');
+}
+function delUser(id){
+  const u=DB.users.find(x=>x.id===id);
+  if(!u)return;
+  if(u.role==='admin'){toast('管理员账号不可删除');return;}
+  confirm(`确定删除账号「${u.name}（${u.no}）」？该账号将无法登录。`,()=>{
+    DB.users=DB.users.filter(x=>x.id!==id);
+    save();renderUsers();toast('账号已删除');
+  });
+}
+function fmtDate(s){if(!s)return '—';return s;}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._tm);t._tm=setTimeout(()=>t.classList.remove('show'),2200);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function addFeed(text,type){DB.feed.unshift({text,type,time:new Date().toLocaleString('zh-CN')});if(DB.feed.length>50)DB.feed.length=50;}
+
+/* ================= 导航 ================= */
+const VIEWS={dashboard:['仪表盘','校园数据总览'],classes:['班级管理','班级信息与班主任管理'],students:['学生管理','学生档案与班级/宿舍归属'],teachers:['教师管理','教师档案与任教学科'],courses:['课程管理','课程信息与授课安排'],timetable:['课表查询','班级/教师/学生课表一览'],scores:['成绩管理','成绩录入、统计与分析'],attendance:['考勤管理','出勤记录与统计'],dormitories:['宿舍管理','宿舍分配与入住情况'],users:['账号管理','师生账号与密码管理']};
+function go(view){
+  document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('active',a.dataset.view===view));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+view));
+  document.getElementById('pageTitle').textContent=VIEWS[view][0];
+  document.getElementById('pageSub').textContent=VIEWS[view][1];
+  if(view==='dashboard')renderDashboard();
+  if(view==='classes')renderClasses();
+  if(view==='students')renderStudents();
+  if(view==='teachers')renderTeachers();
+  if(view==='courses')renderCourses();
+  if(view==='timetable')initTimetable();
+  if(view==='scores')renderScores();
+  if(view==='attendance')renderAttendance();
+  if(view==='dormitories')renderDormitories();
+  if(view==='users')renderUsers();
+}
+document.querySelectorAll('.nav a').forEach(a=>a.addEventListener('click',()=>go(a.dataset.view)));
+
+/* ================= 班级 ================= */
+function classById(id){return DB.classes.find(c=>c.id===id)||{};}
+function className(id){const c=classById(id);return c.name||'未分班';}
+function classStudents(id){return DB.students.filter(s=>s.classId===id);}
+function renderClasses(){
+  const kw=(document.getElementById('clsSearch').value||'').toLowerCase();
+  const rows=DB.classes.filter(c=>!kw||(c.name+c.grade+(c.teacherName||'')).toLowerCase().includes(kw));
+  const tb=document.getElementById('classTable');
+  if(!rows.length){tb.innerHTML='<tr><td colspan="6"><div class="empty"><span class="ic">🏫</span>暂无班级数据</div></td></tr>';return;}
+  tb.innerHTML=rows.map(c=>{
+    const n=classStudents(c.id).length;
+    return `<tr>
+      <td><span class="td-name">${esc(c.name)}</span></td>
+      <td>${esc(c.grade||'')}</td>
+      <td>${esc(c.teacherName||'—')}</td>
+      <td>${esc(c.room||'—')}</td>
+      <td><span class="tag blue">${n} 人</span></td>
+      <td><button class="btn sm" onclick="showClassQr('${c.id}')">二维码</button></td>
+      <td><div class="actions">
+        <button class="btn sm edit" onclick="openClassModal('${c.id}')">编辑</button>
+        <button class="btn sm danger" onclick="delClass('${c.id}')">删除</button>
+      </div></td></tr>`;
+  }).join('');
+}
+function delClass(id){
+  const c=classById(id);const n=classStudents(id).length;
+  confirm(`确定删除班级「${c.name}」？该班 ${n} 名学生将变为未分班状态。`,()=>{
+    DB.classes=DB.classes.filter(x=>x.id!==id);
+    DB.students.forEach(s=>{if(s.classId===id)s.classId='';});
+    save();addFeed(`删除班级「${c.name}」`,'red');renderClasses();renderDashboard();toast('班级已删除');
+  });
+}
+function openClassModal(id){
+  const c=id?classById(id):{};
+  classTitle.textContent=id?'编辑班级':'新建班级';
+  classBody.innerHTML=`
+    <div class="form-grid">
+      <div class="form-item"><label>班级名称<span class="req">*</span></label><input id="f_cname" value="${esc(c.name||'')}" placeholder="如：高一（1）班"></div>
+      <div class="form-item"><label>年级<span class="req">*</span></label><select id="f_cgrade">
+        ${['高一','高二','高三','初一','初二','初三','大一','大二','大三','大四'].map(g=>`<option ${c.grade===g?'selected':''}>${g}</option>`).join('')}
+      </select></div>
+      <div class="form-item"><label>班主任</label><select id="f_cteacher"><option value="">— 未设置 —</option>${DB.teachers.map(t=>`<option value="${t.id}" ${c.teacherId===t.id?'selected':''}>${esc(t.name)}</option>`).join('')}</select></div>
+      <div class="form-item"><label>教室</label><input id="f_croom" value="${esc(c.room||'')}" placeholder="如：教学楼A-301"></div>
+    </div>`;
+  classFoot.innerHTML=`<button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="saveClass('${id||''}')">保存</button>`;
+  showModal();
+}
+function saveClass(id){
+  const name=document.getElementById('f_cname').value.trim();
+  if(!name){toast('请填写班级名称');return;}
+  const grade=document.getElementById('f_cgrade').value;
+  const tSel=document.getElementById('f_cteacher');const teacherId=tSel?tSel.value:'';
+  const teacher=DB.teachers.find(t=>t.id===teacherId);
+  if(id){
+    const c=classById(id);Object.assign(c,{name,grade,teacherId,teacherName:teacher?teacher.name:'',room:document.getElementById('f_croom').value.trim()});
+    addFeed(`更新班级「${name}」`,'blue');
+  }else{
+    DB.classes.push({id:uid('cls'),name,grade,teacherId,teacherName:teacher?teacher.name:'',room:document.getElementById('f_croom').value.trim()});
+    addFeed(`新建班级「${name}」`,'blue');
+  }
+  save();closeModal();renderClasses();renderDashboard();toast('保存成功');
+}
+
+/* ================= 班级二维码 & 扫码落地 ================= */
+function classQrUrl(cid){
+  const base=location.href.split('#')[0];
+  return base+'#/c/'+encodeURIComponent(cid);
+}
+function makeQrDataUrl(text){
+  if(typeof qrcode!=='function')return null;
+  try{
+    const qr=qrcode(0,'M');
+    qr.addData(text);
+    qr.make();
+    return qr.createDataURL(5,8);
+  }catch(e){return null;}
+}
+function showClassQr(cid){
+  const c=classById(cid);if(!c.id){toast('班级不存在');return;}
+  const url=classQrUrl(cid);
+  const dataUrl=makeQrDataUrl(url);
+  classTitle.textContent=`${c.name} · 班级二维码`;
+  classBody.innerHTML=`
+    <div class="qr-box">
+      <div class="qr-canvas">${dataUrl?`<img src="${dataUrl}" alt="班级二维码">`:'<div class="empty">二维码生成失败</div>'}</div>
+      <div class="qr-actions">
+        <button class="btn" onclick="downloadClassQrPng('${cid}')">⬇ 下载二维码</button>
+        <button class="btn" onclick="copyClassQrLink('${cid}')">🔗 复制链接</button>
+      </div>
+      <div class="qr-hint">学生扫码：查看今日课程 / 一键签到上学<br>教师扫码：选择班级上课打卡<br>提示：文件在本机打开时，手机无法直接访问；可将本文件部署到局域网/公网服务器后，二维码自动指向可访问地址。</div>
+    </div>`;
+  classFoot.innerHTML=`<button class="btn primary" onclick="closeModal()">关闭</button>`;
+  showModal();
+}
+function downloadClassQrPng(cid){
+  const c=classById(cid);
+  const dataUrl=makeQrDataUrl(classQrUrl(cid));
+  if(!dataUrl){toast('二维码生成失败');return;}
+  const a=document.createElement('a');
+  a.href=dataUrl;a.download=`${c.name}-班级二维码.png`;a.click();
+  toast('二维码已下载');
+}
+function copyClassQrLink(cid){
+  const url=classQrUrl(cid);
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(()=>toast('链接已复制'),()=>toast('复制失败'));}
+  else{toast('当前浏览器不支持复制，请手动复制：'+url);}
+}
+/* 课堂打卡记录 */
+function findTeacherClassLogs(){
+  const d=new Date();const date=today();
+  return (DB.classLogs||[]).filter(l=>l.date===date).sort((a,b)=>String(b.time).localeCompare(String(a.time)));
+}
+function classLogsToday(){
+  return DB.classLogs||[];
+}
+
+/* ================= 学生 ================= */
+function openStudentModal(id){
+  const s=id?DB.students.find(x=>x.id===id):{};
+  const clsSel=`<option value="">未分班</option>`+DB.classes.map(c=>`<option value="${c.id}" ${s.classId===c.id?'selected':''}>${esc(c.name)}</option>`).join('');
+  const dorSel=`<option value="">未分配</option>`+DB.dormitories.map(d=>`<option value="${d.id}" ${s.dormId===d.id?'selected':''}>${esc(d.building)} ${esc(d.room)}</option>`).join('');
+  classTitle.textContent=id?'编辑学生':'录入学生';
+  classBody.innerHTML=`
+    <div class="form-grid">
+      <div class="form-item"><label>学号<span class="req">*</span></label><input id="f_no" value="${esc(s.no||'')}" placeholder="如：20260101"></div>
+      <div class="form-item"><label>姓名<span class="req">*</span></label><input id="f_name" value="${esc(s.name||'')}"></div>
+      <div class="form-item"><label>性别</label><select id="f_sex"><option ${s.sex==='男'?'selected':''}>男</option><option ${s.sex==='女'?'selected':''}>女</option></select></div>
+      <div class="form-item"><label>班级</label><select id="f_class">${clsSel}</select></div>
+      <div class="form-item"><label>宿舍</label><select id="f_dorm">${dorSel}</select></div>
+      <div class="form-item"><label>联系电话</label><input id="f_phone" value="${esc(s.phone||'')}"></div>
+      <div class="form-item full"><label>备注</label><input id="f_remark" value="${esc(s.remark||'')}"></div>
+    </div>`;
+  classFoot.innerHTML=`<button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="saveStudent('${id||''}')">保存</button>`;
+  showModal();
+}
+function saveStudent(id){
+  const no=document.getElementById('f_no').value.trim(),name=document.getElementById('f_name').value.trim();
+  if(!no){toast('请填写学号');return;}if(!name){toast('请填写姓名');return;}
+  const d={no,name,sex:document.getElementById('f_sex').value,classId:document.getElementById('f_class').value,dormId:document.getElementById('f_dorm').value,phone:document.getElementById('f_phone').value.trim(),remark:document.getElementById('f_remark').value.trim()};
+  if(id){Object.assign(DB.students.find(x=>x.id===id),d);addFeed(`更新学生「${name}」`,'blue');}
+  else{d.id=uid('stu');DB.students.push(d);addFeed(`录入学生「${name}」`,'blue');}
+  save();closeModal();renderStudents();renderDashboard();toast('保存成功');
+}
+function renderStudents(){
+  const kw=(document.getElementById('stuSearch').value||'').toLowerCase();
+  const cf=document.getElementById('stuClassFilter').value;
+  const list=DB.students.filter(s=>(!kw||(s.no+s.name+(s.phone||'')).toLowerCase().includes(kw))&&(!cf||s.classId===cf));
+  document.getElementById('stuClassFilter').innerHTML='<option value="">全部班级</option>'+DB.classes.map(c=>`<option value="${c.id}" ${c.id===cf?'selected':''}>${esc(c.name)}</option>`).join('');
+  const tb=document.getElementById('studentBody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="7"><div class="empty"><span class="ic">👨‍🎓</span>暂无学生数据，点击右上角录入</div></td></tr>';return;}
+  tb.innerHTML=list.map(s=>{
+    const dor=DB.dormitories.find(d=>d.id===s.dormId);
+    return `<tr>
+      <td>${esc(s.no)}</td><td><span class="td-name">${esc(s.name)}</span></td>
+      <td>${esc(s.sex||'—')}</td><td>${esc(classById(s.classId).name||'未分班')}</td>
+      <td>${dor?`${esc(dor.building)} ${esc(dor.room)}`:'—'}</td><td>${esc(s.phone||'—')}</td>
+      <td><div class="actions"><button class="btn sm edit" onclick="openStudentModal('${s.id}')">编辑</button><button class="btn sm" onclick="showStudentTimetable('${s.id}')">课表</button><button class="btn sm danger" onclick="delStudent('${s.id}')">删除</button></div></td></tr>`;
+  }).join('');
+}
+function delStudent(id){
+  const s=DB.students.find(x=>x.id===id);
+  confirm(`确定删除学生「${s.name}」（${s.no}）？相关成绩与考勤记录将一并删除。`,()=>{
+    DB.students=DB.students.filter(x=>x.id!==id);
+    DB.scores=DB.scores.filter(x=>x.studentId!==id);
+    DB.attendance=DB.attendance.filter(x=>x.studentId!==id);
+    save();addFeed(`删除学生「${s.name}」`,'red');renderStudents();renderDashboard();toast('已删除');
+  });
+}
+function exportStudentsCsv(){
+  const rows=[['学号','姓名','性别','班级','宿舍','电话']];
+  DB.students.forEach(s=>{const d=DB.dormitories.find(x=>x.id===s.dormId);rows.push([s.no,s.name,s.sex,classById(s.classId).name||'',d?`${d.building}${d.room}`:'',s.phone]);});
+  downloadCsv('学生名单.csv',rows);
+}
+
+/* ================= 教师 ================= */
+function openTeacherModal(id){
+  const t=id?DB.teachers.find(x=>x.id===id):{};
+  classTitle.textContent=id?'编辑教师':'添加教师';
+  classBody.innerHTML=`
+    <div class="form-grid">
+      <div class="form-item"><label>工号<span class="req">*</span></label><input id="f_no" value="${esc(t.no||'')}" placeholder="如：T2026001"></div>
+      <div class="form-item"><label>姓名<span class="req">*</span></label><input id="f_name" value="${esc(t.name||'')}"></div>
+      <div class="form-item"><label>性别</label><select id="f_sex"><option ${t.sex==='男'?'selected':''}>男</option><option ${t.sex==='女'?'selected':''}>女</option></select></div>
+      <div class="form-item"><label>任教学科</label><input id="f_subject" value="${esc(t.subject||'')}" placeholder="如：数学"></div>
+      <div class="form-item"><label>职称</label><select id="f_title"><option>初级</option><option>中级</option><option>高级</option><option>特级</option></select></div>
+      <div class="form-item"><label>联系电话</label><input id="f_phone" value="${esc(t.phone||'')}"></div>
+      <div class="form-item full"><label>备注</label><input id="f_remark" value="${esc(t.remark||'')}"></div>
+    </div>`;
+  classFoot.innerHTML=`<button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="saveTeacher('${id||''}')">保存</button>`;
+  showModal();
+}
+function saveTeacher(id){
+  const no=document.getElementById('f_no').value.trim(),name=document.getElementById('f_name').value.trim();
+  if(!no){toast('请填写工号');return;}if(!name){toast('请填写姓名');return;}
+  const d={no,name,sex:document.getElementById('f_sex').value,subject:document.getElementById('f_subject').value.trim(),title:document.getElementById('f_title').value,phone:document.getElementById('f_phone').value.trim(),remark:document.getElementById('f_remark').value.trim()};
+  if(id){Object.assign(DB.teachers.find(x=>x.id===id),d);addFeed(`更新教师「${name}」`,'blue');}
+  else{d.id=uid('tea');DB.teachers.push(d);addFeed(`添加教师「${name}」`,'blue');}
+  save();closeModal();renderTeachers();renderDashboard();toast('保存成功');
+}
+function renderTeachers(){
+  const kw=(document.getElementById('teaSearch').value||'').toLowerCase();
+  const list=DB.teachers.filter(t=>!kw||(t.name+t.no+(t.subject||'')).toLowerCase().includes(kw));
+  const tb=document.getElementById('teacherBody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="7"><div class="empty"><span class="ic">👩‍🏫</span>暂无教师数据</div></td></tr>';return;}
+  tb.innerHTML=list.map(t=>`<tr>
+    <td>${esc(t.no)}</td><td><span class="td-name">${esc(t.name)}</span></td><td>${esc(t.sex||'—')}</td>
+    <td>${esc(t.subject||'—')}</td><td><span class="tag gray">${esc(t.title||'—')}</span></td><td>${esc(t.phone||'—')}</td>
+    <td><div class="actions"><button class="btn sm edit" onclick="openTeacherModal('${t.id}')">编辑</button><button class="btn sm" onclick="showTeacherTimetable('${t.id}')">课表</button><button class="btn sm danger" onclick="delTeacher('${t.id}')">删除</button></div></td></tr>`).join('');
+}
+function delTeacher(id){
+  const t=DB.teachers.find(x=>x.id===id);
+  confirm(`确定删除教师「${t.name}」？其授课课程将变为未安排教师。`,()=>{
+    DB.teachers=DB.teachers.filter(x=>x.id!==id);
+    DB.classes.forEach(c=>{if(c.teacherId===id){c.teacherId='';c.teacherName='';}});
+    DB.courses.forEach(c=>{if(c.teacherId===id){c.teacherId='';c.teacherName='';}});
+    save();addFeed(`删除教师「${t.name}」`,'red');renderTeachers();renderClasses();renderCourses();renderDashboard();toast('已删除');
+  });
+}
+
+/* ================= 课程 ================= */
+function renderCourses(){
+  const kw=(document.getElementById('couSearch').value||'').toLowerCase();
+  const list=DB.courses.filter(c=>!kw||(c.name+c.code+(c.teacherName||'')).toLowerCase().includes(kw));
+  const tb=document.getElementById('courseBody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="7"><div class="empty"><span class="ic">📚</span>暂无课程数据</div></td></tr>';return;}
+  tb.innerHTML=list.map(c=>{
+    const cnt=DB.scores.filter(s=>s.courseId===c.id).length;
+    const sessions=courseSessions(c);
+    const timeHtml=sessions.length?sessions.map(s=>{
+      const clsTxt=(s.classIds||[]).length?`（${(s.classIds||[]).map(cid=>classById(cid).name).join('、')}）`:'';
+      return `<span class="tag blue" style="margin:1px 2px">${esc(WEEKDAYS[(s.day||1)-1]||'')} 第${esc(s.period||'')}节${clsTxt}</span>`;
+    }).join(''):'<span class="tag gray">未排课</span>';
+    return `<tr>
+      <td><span class="td-name">${esc(c.name)}</span></td><td>${esc(c.code||'—')}</td>
+      <td><span class="tag orange">${c.credit||0} 学分</span></td><td>${esc(c.teacherName||'—')}</td>
+      <td style="max-width:320px">${timeHtml}</td><td>${cnt} 人</td>
+      <td><div class="actions"><button class="btn sm edit" onclick="openCourseModal('${c.id}')">编辑</button><button class="btn sm danger" onclick="delCourse('${c.id}')">删除</button></div></td></tr>`;
+  }).join('');
+}
+function openCourseModal(id){
+  const c=id?DB.courses.find(x=>x.id===id):{};
+  const sessions=c.sessions&&c.sessions.length?c.sessions:[{day:1,period:1,classIds:[],room:''}];
+  classTitle.textContent=id?'编辑课程':'添加课程';
+  classBody.innerHTML=`
+    <div class="form-grid">
+      <div class="form-item"><label>课程名称<span class="req">*</span></label><input id="f_cname" value="${esc(c.name||'')}" placeholder="如：高等数学"></div>
+      <div class="form-item"><label>课程编号</label><input id="f_ccode" value="${esc(c.code||'')}" placeholder="如：MATH101"></div>
+      <div class="form-item"><label>学分</label><input id="f_credit" type="number" min="0" step="0.5" value="${c.credit||2}"></div>
+      <div class="form-item"><label>授课教师</label><select id="f_teacher"><option value="">— 未安排 —</option>${DB.teachers.map(t=>`<option value="${t.id}" ${c.teacherId===t.id?'selected':''}>${esc(t.name)}</option>`).join('')}</select></div>
+      <div class="form-item"><label>备注</label><input id="f_remark" value="${esc(c.remark||'')}"></div>
+      <div class="form-item full"><label>排课时间（支持多节）</label>
+        <div id="sessionList" style="display:flex;flex-direction:column;gap:8px;"></div>
+        <button class="btn sm" style="margin-top:8px" onclick="addSessionRow()">＋ 添加上课时间</button>
+      </div>
+    </div>`;
+  classFoot.innerHTML=`<button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="saveCourse('${id||''}')">保存</button>`;
+  showModal();
+  const list=document.getElementById('sessionList');
+  list.innerHTML=sessions.map((s,i)=>sessionRowHtml(s,i)).join('');
+}
+function sessionRowHtml(s,i){
+  const clsOpts=`<option value="">全部班级</option>`+DB.classes.map(c=>`<option value="${c.id}" ${(s.classIds||[]).includes(c.id)?'selected':''}>${esc(c.name)}</option>`).join('');
+  return `<div class="session-row" style="display:flex;gap:8px;align-items:center;background:var(--gray-50);padding:8px;border-radius:8px;flex-wrap:wrap">
+    <select id="s_day_${i}" style="width:90px">
+      ${WEEKDAYS.map((d,di)=>`<option value="${di+1}" ${s.day===(di+1)?'selected':''}>${d}</option>`).join('')}
+    </select>
+    <select id="s_period_${i}" style="width:110px">
+      ${PERIODS.map(p=>`<option value="${p[0]}" ${String(s.period)===String(p[0])?'selected':''}>第${p[0]}节</option>`).join('')}
+    </select>
+    <select id="s_cls_${i}" multiple style="flex:1;min-width:140px">${clsOpts}</select>
+    <input id="s_room_${i}" placeholder="教室" value="${esc(s.room||'')}" style="width:110px">
+    <button class="btn sm danger" onclick="removeSessionRow(this,${i})">✕</button>
+  </div>`;
+}
+function addSessionRow(){
+  const list=document.getElementById('sessionList');
+  const idx=list.children.length;
+  list.insertAdjacentHTML('beforeend',sessionRowHtml({day:1,period:1,classIds:[],room:''},idx));
+}
+function delSessionRow(btn,i){const list=document.getElementById('sessionList');if(list.children.length<=1){toast('至少保留一个上课时间');return;}btn.closest('.session-row').remove();}
+function collectSessions(){
+  const list=document.getElementById('sessionList');
+  return Array.from(list.children).map((row,idx)=>{
+    const day=document.getElementById('s_day_'+idx).value;
+    const period=document.getElementById('s_period_'+idx).value;
+    const clsSel=document.getElementById('s_cls_'+idx);
+    const classIds=Array.from(clsSel.selectedOptions).map(o=>o.value).filter(v=>v);
+    const room=document.getElementById('s_room_'+idx).value.trim();
+    return {id:uid('ses'),day:parseInt(day),period:parseInt(period),classIds,room};
+  }).filter(s=>s.day&&s.period);
+}
+function saveCourse(id){
+  const name=document.getElementById('f_cname').value.trim();
+  if(!name){toast('请填写课程名称');return;}
+  const tSel=document.getElementById('f_teacher'),t=DB.teachers.find(x=>x.id===tSel.value);
+  const sessions=collectSessions();
+  const d={name,code:document.getElementById('f_ccode').value.trim(),credit:parseFloat(document.getElementById('f_credit').value)||0,teacherId:tSel.value,teacherName:t?t.name:'',sessions,remark:document.getElementById('f_remark').value.trim()};
+  if(id){Object.assign(DB.courses.find(x=>x.id===id),d);addFeed(`更新课程「${name}」`,'blue');}
+  else{d.id=uid('cou');DB.courses.push(d);addFeed(`添加课程「${name}」`,'blue');}
+  save();closeModal();renderCourses();renderDashboard();toast('保存成功');
+}
+function delCourse(id){
+  const c=DB.courses.find(x=>x.id===id);
+  confirm(`确定删除课程「${c.name}」？相关成绩记录将一并删除。`,()=>{
+    DB.courses=DB.courses.filter(x=>x.id!==id);
+    DB.scores=DB.scores.filter(x=>x.courseId!==id);
+    save();addFeed(`删除课程「${c.name}」`,'red');renderCourses();renderDashboard();toast('已删除');
+  });
+}
+
+/* ================= 课表 ================= */
+const PERIODS=[['1','08:00-08:45'],['2','08:55-09:40'],['3','10:00-10:45'],['4','10:55-11:40'],['5','14:00-14:45'],['6','14:55-15:40'],['7','16:00-16:45'],['8','16:55-17:40']];
+const WEEKDAYS=['周一','周二','周三','周四','周五','周六','周日'];
+let ttMode='class',ttTarget='';
+function courseSessions(c){return Array.isArray(c.sessions)?c.sessions:[];}
+function allSessions(){const r=[];DB.courses.forEach(c=>courseSessions(c).forEach(s=>r.push(Object.assign({courseId:c.id,courseName:c.name,teacherName:c.teacherName},s))));return r;}
+function sessionsForClass(cid){return allSessions().filter(s=>(s.classIds||[]).includes(cid));}
+function sessionsForTeacher(tid){return allSessions().filter(s=>DB.courses.find(c=>c.id===s.courseId&&c.teacherId===tid));}
+function sessionsForStudent(sid){const stu=DB.students.find(s=>s.id===sid);if(!stu)return[];return sessionsForClass(stu.classId);}
+const COURSE_COLORS=['#2563eb','#059669','#d97706','#7c3aed','#db2777','#0891b2','#ca8a04','#dc2626'];
+function courseColor(idx){return COURSE_COLORS[idx%COURSE_COLORS.length];}
+function courseColorIdx(name){let i=DB.courses.findIndex(c=>c.name===name);return i<0?0:i;}
+function colorFor(name){const idx=courseColorIdx(name);return courseColor(idx);}
+function initTimetable(){
+  const saved=localStorage.getItem('tt_mode')||'class';
+  setTtMode(saved,true);
+}
+function setTtMode(mode,silent){
+  ttMode=mode;
+  document.querySelectorAll('#ttTabs .btn').forEach(b=>{
+    b.classList.toggle('primary',b.dataset.mode===mode);
+  });
+  const classSel=document.getElementById('ttClassSel'),teaSel=document.getElementById('ttTeacherSel');
+  classSel.style.display=mode==='class'?'':'none';
+  teaSel.style.display=mode==='teacher'?'':'none';
+  localStorage.setItem('tt_mode',mode);
+  // 填充选项
+  if(mode==='class'){
+    const cur=ttTarget||DB.classes[0]?.id;
+    classSel.innerHTML=DB.classes.map(c=>`<option value="${c.id}" ${c.id===cur?'selected':''}>${esc(c.name)}</option>`).join('')||'<option value="">暂无班级</option>';
+    ttTarget=cur||classSel.value;
+  }else{
+    const cur=ttTarget||DB.teachers[0]?.id;
+    teaSel.innerHTML=DB.teachers.map(t=>`<option value="${t.id}" ${t.id===cur?'selected':''}>${esc(t.name)}（${esc(t.subject||'')}）</option>`).join('')||'<option value="">暂无教师</option>';
+    ttTarget=cur||teaSel.value;
+  }
+  renderTimetable();
+}
+function renderTimetable(){
+  const classSel=document.getElementById('ttClassSel'),teaSel=document.getElementById('ttTeacherSel');
+  const target=ttMode==='class'?classSel.value:teaSel.value;
+  if(!target){document.getElementById('ttTable').innerHTML='';return;}
+  const isClass=ttMode==='class';
+  const sessions=isClass?sessionsForClass(target):sessionsForTeacher(target);
+  const person=isClass?classById(target):DB.teachers.find(t=>t.id===target);
+  const info=document.getElementById('ttPersonInfo');
+  if(isClass){
+    const stuN=classStudents(target).length;
+    info.innerHTML=`<div class="av">🏫</div><div class="info"><div class="n">${esc(person.name||'未命名班级')}</div><div class="d">${esc(person.grade||'')} · 班主任：${esc(person.teacherName||'未设置')} · ${stuN} 名学生</div></div>`;
+  }else{
+    info.innerHTML=`<div class="av">${esc((person.name||'?')[0])}</div><div class="info"><div class="n">${esc(person.name||'')}</div><div class="d">${esc(person.subject||'')}教师 · 工号 ${esc(person.no||'')}</div></div>`;
+  }
+  // 冲突检测：同一格多节课
+  const cellMap={};
+  sessions.forEach(s=>{
+    const k=s.day+'_'+s.period;
+    (cellMap[k]=cellMap[k]||[]).push(s);
+  });
+  let total=0;
+  const weeks={};
+  sessions.forEach(s=>{total++;weeks[s.day]=(weeks[s.day]||0)+1;});
+  const html=`<table class="timetable">
+    <thead><tr><th>节次</th>${WEEKDAYS.map(d=>`<th>${d}</th>`).join('')}</tr></thead>
+    <tbody>${PERIODS.map(([p,tm],pi)=>{
+      return `<tr><td class="period">第${p}节<br><span style="font-weight:400;font-size:10px;color:var(--gray-400)">${tm}</span></td>${WEEKDAYS.map((d,di)=>{
+        const k=(di+1)+'_'+(pi+1);
+        const cells=cellMap[k]||[];
+        if(!cells.length)return `<td class="empty">—</td>`;
+        return `<td>${cells.map(s=>{
+          const course=DB.courses.find(c=>c.id===s.courseId);
+          const conflict=cells.length>1;
+          const color=colorFor(course?course.name:'');
+          const showName=isClass?s.courseName:(course?course.name:'');
+          return `<div class="tt-cell${conflict?' conflict':''}" style="border-left:3px solid ${color}" onclick="showSessionDetail('${s.id}')">
+            <div class="tname">${esc(showName)}</div>
+            ${isClass?`<div class="tinfo">${esc(s.teacherName||'')}</div>`:''}
+            <div class="troom">${esc(s.room||'')}</div>
+          </div>`;
+        }).join('')}</td>`;
+      }).join('')}</tr>`;
+    }).join('')}</tbody></table>`;
+  document.getElementById('ttTable').innerHTML=html;
+  // 统计
+  const stat=`<div class="tt-stat">
+    <div class="it"><div class="v">${total}</div><div class="l">每周课时</div></div>
+    <div class="it"><div class="v">${Object.keys(weeks).length}</div><div class="l">上课天数</div></div>
+    <div class="it"><div class="v">${sessions.length?new Set(sessions.map(s=>s.courseId)).size:0}</div><div class="l">涉及课程</div></div>
+  </div>`;
+  const personInfo=document.getElementById('ttPersonInfo');
+  if(!personInfo.querySelector('.tt-stat')){personInfo.insertAdjacentHTML('beforeend',stat);}
+  else{personInfo.querySelector('.tt-stat').outerHTML=stat;}
+}
+function showSessionDetail(sid){
+  const s=allSessions().find(x=>x.id===sid);if(!s)return;
+  const course=DB.courses.find(c=>c.id===s.courseId);
+  const clsNames=(s.classIds||[]).map(cid=>classById(cid).name).filter(Boolean).join('、')||'—';
+  classTitle.textContent='课程详情';
+  classBody.innerHTML=`
+    <div class="form-grid">
+      <div class="form-item"><label>课程</label><div class="td-name">${esc(s.courseName||'')}</div></div>
+      <div class="form-item"><label>授课教师</label><div>${esc(s.teacherName||'—')}</div></div>
+      <div class="form-item"><label>时间</label><div>${esc(WEEKDAYS[(s.day||1)-1]||'')} 第${esc(s.period||'')}节</div></div>
+      <div class="form-item"><label>教室</label><div>${esc(s.room||'—')}</div></div>
+      <div class="form-item full"><label>适用班级</label><div>${clsNames}</div></div>
+    </div>`;
+  classFoot.innerHTML=`<button class="btn primary" onclick="closeModal()">关闭</button>`;
+  showModal();
+}
+function exportTimetable(){
+  const classSel=document.getElementById('ttClassSel'),teaSel=document.getElementById('ttTeacherSel');
+  const target=ttMode==='class'?classSel.value:teaSel.value;
+  const person=ttMode==='class'?classById(target):DB.teachers.find(t=>t.id===target);
+  const name=ttMode==='class'?`${person.name||'班级'}课表`:`${person.name||'教师'}课表`;
+  const rows=[['节次','周一','周二','周三','周四','周五','周六','周日']];
+  const sessions=ttMode==='class'?sessionsForClass(target):sessionsForTeacher(target);
+  PERIODS.forEach((p,pi)=>{
+    const r=[`第${p[0]}节`];
+    WEEKDAYS.forEach((d,di)=>{
+      const cells=sessions.filter(s=>s.day===(di+1)&&s.period===(pi+1));
+      r.push(cells.map(s=>s.courseName+(s.room?'@'+s.room:'')).join(' / ')||'');
+    });
+    rows.push(r);
+  });
+  downloadCsv(name+'.csv',rows);
+  toast('课表已导出');
+}
+function printTimetable(){
+  const classSel=document.getElementById('ttClassSel'),teaSel=document.getElementById('ttTeacherSel');
+  const target=ttMode==='class'?classSel.value:teaSel.value;
+  const person=ttMode==='class'?classById(target):DB.teachers.find(t=>t.id===target);
+  const name=(person&&person.name?person.name:'')+'课表';
+  const w=window.open('','_blank');
+  const sessions=ttMode==='class'?sessionsForClass(target):sessionsForTeacher(target);
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(name)}</title>
+    <style>body{font-family:sans-serif;padding:30px;}h2{text-align:center;}table{border-collapse:collapse;width:100%;margin-top:20px;}th,td{border:1px solid #333;padding:8px;text-align:center;font-size:13px;}th{background:#f0f0f0;}</style></head><body>
+    <h2>${esc(name)}</h2>
+    <table><thead><tr><th>节次</th>${WEEKDAYS.map(d=>`<th>${d}</th>`).join('')}</tr></thead><tbody>
+    ${PERIODS.map(p=>`<tr><td>第${p[0]}节<br><small>${p[1]}</small></td>${WEEKDAYS.map((d,di)=>{
+      const cells=sessions.filter(s=>s.day===(di+1)&&s.period===parseInt(p[0]));
+      return `<td>${cells.map(s=>`${esc(s.courseName)}<br><small>${esc(s.teacherName||'')} ${esc(s.room||'')}</small>`).join('<br>')||''}</td>`;
+    }).join('')}</tr>`).join('')}
+    </tbody></table></body></html>`);
+  w.document.close();w.focus();w.print();
+}
+/* 学生个人课表弹窗 */
+function showStudentTimetable(sid){
+  const stu=DB.students.find(s=>s.id===sid);if(!stu)return;
+  const cls=classById(stu.classId);
+  const sessions=sessionsForStudent(sid);
+  classTitle.textContent=`${stu.name} · 个人课表`;
+  classBody.innerHTML=ttModalHtml(sessions,
+    `<div class="tt-person" style="margin-bottom:14px"><div class="av">${esc((stu.name||'?')[0])}</div><div class="info"><div class="n">${esc(stu.name)}</div><div class="d">${esc(stu.no||'')} · ${esc(cls.name||'未分班')}</div></div></div>`
+  );
+  classFoot.innerHTML=`<button class="btn" onclick="exportStudentTimetable('${sid}')">⬇ 导出</button><button class="btn primary" onclick="closeModal()">关闭</button>`;
+  showModal();
+}
+/* 教师个人课表弹窗 */
+function showTeacherTimetable(tid){
+  const t=DB.teachers.find(x=>x.id===tid);if(!t)return;
+  const sessions=sessionsForTeacher(tid);
+  classTitle.textContent=`${t.name} · 个人课表`;
+  classBody.innerHTML=ttModalHtml(sessions,
+    `<div class="tt-person" style="margin-bottom:14px"><div class="av">${esc((t.name||'?')[0])}</div><div class="info"><div class="n">${esc(t.name)}</div><div class="d">${esc(t.subject||'')}教师 · 工号 ${esc(t.no||'')}</div></div></div>`
+  );
+  classFoot.innerHTML=`<button class="btn primary" onclick="closeModal()">关闭</button>`;
+  showModal();
+}
+/* 弹窗课表 HTML（复用网格） */
+function ttModalHtml(sessions,personHtml){
+  const cellMap={};
+  sessions.forEach(s=>{const k=s.day+'_'+s.period;(cellMap[k]=cellMap[k]||[]).push(s);});
+  const grid=`<div class="table-wrap timetable-wrap"><table class="timetable">
+    <thead><tr><th>节次</th>${WEEKDAYS.map(d=>`<th>${d}</th>`).join('')}</tr></thead>
+    <tbody>${PERIODS.map(([p,tm],pi)=>`<tr><td class="period">第${p}节<br><span style="font-weight:400;font-size:10px;color:var(--gray-400)">${tm}</span></td>${WEEKDAYS.map((d,di)=>{
+      const k=(di+1)+'_'+(pi+1);const cells=cellMap[k]||[];
+      if(!cells.length)return `<td class="empty">—</td>`;
+      return `<td>${cells.map(s=>{
+        const course=DB.courses.find(c=>c.id===s.courseId);
+        const color=colorFor(course?course.name:'');
+        return `<div class="tt-cell${cells.length>1?' conflict':''}" style="border-left:3px solid ${color}">
+          <div class="tname">${esc(s.courseName)}</div>
+          <div class="tinfo">${esc(s.teacherName||'')}</div>
+          <div class="troom">${esc(s.room||'')}</div>
+        </div>`;
+      }).join('')}</td>`;
+    }).join('')}</tr>`).join('')}</tbody></table></div>`;
+  const total=sessions.length;
+  const days=new Set(sessions.map(s=>s.day)).size;
+  const stat=`<div class="tt-stat"><div class="it"><div class="v">${total}</div><div class="l">每周课时</div></div><div class="it"><div class="v">${days}</div><div class="l">上课天数</div></div></div>`;
+  return personHtml+grid+`<div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px"><div class="tt-legend"><span><span class="dot" style="background:var(--primary-light);border:1px solid #bfdbfe;"></span>课程</span><span><span class="dot" style="background:var(--danger-light);border:1px solid #fecaca;"></span>冲突</span></div>${stat}</div>`;
+}
+function exportStudentTimetable(sid){
+  const stu=DB.students.find(x=>x.id===sid);if(!stu)return;
+  const sessions=sessionsForStudent(sid);
+  const rows=[['节次','周一','周二','周三','周四','周五','周六','周日']];
+  PERIODS.forEach(p=>{
+    const r=[`第${p[0]}节`];
+    WEEKDAYS.forEach((d,di)=>{
+      r.push(sessions.filter(s=>s.day===(di+1)&&s.period===parseInt(p[0])).map(s=>s.courseName+(s.room?'@'+s.room:'')).join(' / ')||'');
+    });
+    rows.push(r);
+  });
+  downloadCsv(`${stu.name}课表.csv`,rows);
+  toast('课表已导出');
+}
+
+/* ================= 成绩 ================= */
+function renderScores(){
+  const kw=(document.getElementById('scoreSearch').value||'').toLowerCase();
+  const cf=document.getElementById('scoreCourseFilter').value;
+  const ef=document.getElementById('scoreExamFilter').value;
+  const list=DB.scores.filter(s=>{
+    const stu=DB.students.find(x=>x.id===s.studentId),cou=DB.courses.find(x=>x.id===s.courseId);
+    return (!kw||((stu?stu.name:'')+(cou?cou.name:'')).toLowerCase().includes(kw))&&(!cf||s.courseId===cf)&&(!ef||s.examType===ef);
+  }).sort((a,b)=>(b.score||0)-(a.score||0));
+  document.getElementById('scoreCourseFilter').innerHTML='<option value="">全部课程</option>'+DB.courses.map(c=>`<option value="${c.id}" ${c.id===cf?'selected':''}>${esc(c.name)}</option>`).join('');
+  const tb=document.getElementById('scoreBody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="7"><div class="empty"><span class="ic">📝</span>暂无成绩数据，点击右上角录入</div></td></tr>';return;}
+  tb.innerHTML=list.map(s=>{
+    const stu=DB.students.find(x=>x.id===s.studentId),cou=DB.courses.find(x=>x.id===s.courseId);
+    const score=Number(s.score);
+    const tag=score>=90?'tag green':score>=60?'tag blue':'tag red';
+    return `<tr>
+      <td><span class="td-name">${stu?esc(stu.name):'—'}</span><div class="td-sub">${stu?esc(stu.no):''}</div></td>
+      <td>${stu?esc(classById(stu.classId).name||'未分班'):'—'}</td>
+      <td>${cou?esc(cou.name):'—'}</td><td><span class="tag gray">${esc(s.examType||'—')}</span></td>
+      <td>${esc(s.semester||'—')}</td>
+      <td><span class="tag ${tag}">${score} 分</span></td>
+      <td><div class="actions"><button class="btn sm edit" onclick="openScoreModal('${s.id}')">编辑</button><button class="btn sm danger" onclick="delScore('${s.id}')">删除</button></div></td></tr>`;
+  }).join('');
+}
+function openScoreModal(id){
+  const s=id?DB.scores.find(x=>x.id===id):{};
+  const stuSel=`<option value="">请选择学生</option>`+DB.students.map(x=>`<option value="${x.id}" ${s.studentId===x.id?'selected':''}>${esc(x.name)}（${esc(x.no)}）</option>`).join('');
+  const couSel=`<option value="">请选择课程</option>`+DB.courses.map(x=>`<option value="${x.id}" ${s.courseId===x.id?'selected':''}>${esc(x.name)}</option>`).join('');
+  classTitle.textContent=id?'编辑成绩':'录入成绩';
+  classBody.innerHTML=`
+    <div class="form-grid">
+      <div class="form-item"><label>学生<span class="req">*</span></label><select id="f_stu">${stuSel}</select></div>
+      <div class="form-item"><label>课程<span class="req">*</span></label><select id="f_cou">${couSel}</select></div>
+      <div class="form-item"><label>考试类型</label><select id="f_exam"><option ${s.examType==='期中考试'?'selected':''}>期中考试</option><option ${s.examType==='期末考试'?'selected':''}>期末考试</option><option ${s.examType==='月考'?'selected':''}>月考</option><option ${s.examType==='平时测验'?'selected':''}>平时测验</option></select></div>
+      <div class="form-item"><label>学期</label><input id="f_sem" value="${esc(s.semester||'2025-2026学年 第一学期')}"></div>
+      <div class="form-item full"><label>成绩（0-100）<span class="req">*</span></label><input id="f_score" type="number" min="0" max="100" value="${s.score??''}"></div>
+    </div>`;
+  classFoot.innerHTML=`<button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="saveScore('${id||''}')">保存</button>`;
+  showModal();
+}
+function saveScore(id){
+  const st=document.getElementById('f_stu').value,cou=document.getElementById('f_cou').value,sc=parseFloat(document.getElementById('f_score').value);
+  if(!st){toast('请选择学生');return;}if(!cou){toast('请选择课程');return;}if(isNaN(sc)||sc<0||sc>100){toast('成绩需在 0-100 之间');return;}
+  const d={studentId:st,courseId:cou,examType:document.getElementById('f_exam').value,semester:document.getElementById('f_sem').value.trim()||'—',score:sc};
+  if(id){Object.assign(DB.scores.find(x=>x.id===id),d);addFeed('更新成绩记录','blue');}
+  else{d.id=uid('score');DB.scores.push(d);addFeed('录入成绩记录','blue');}
+  save();closeModal();renderScores();renderDashboard();toast('保存成功');
+}
+function delScore(id){
+  confirm('确定删除该条成绩记录？',()=>{DB.scores=DB.scores.filter(x=>x.id!==id);save();addFeed('删除成绩记录','red');renderScores();renderDashboard();toast('已删除');});
+}
+function openScoreStats(){
+  const list=DB.scores;
+  if(!list.length){toast('暂无成绩数据');return;}
+  const byCourse={};
+  list.forEach(s=>{const cid=s.courseId;(byCourse[cid]=byCourse[cid]||[]).push(Number(s.score));});
+  let html='<div style="margin-bottom:12px">';
+  Object.entries(byCourse).forEach(([cid,arr])=>{
+    const cou=DB.courses.find(x=>x.id===cid);
+    const avg=(arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1);
+    const max=Math.max(...arr),min=Math.min(...arr);
+    const pass=arr.filter(x=>x>=60).length/arr.length*100;
+    html+=`<div class="mini-stat"><div><span class="k">${cou?esc(cou.name):'未知课程'}</span><div class="bar"><i style="width:${Math.min(100,avg)}%"></i></div></div><div><span class="v">平均 ${avg}</span></div></div>`;
+    html+=`<div class="progress-label"><span>最高 ${max} · 最低 ${min}</span><span>及格率 ${pass.toFixed(0)}%</span></div>`;
+  });
+  html+='</div>';
+  classTitle.textContent='成绩分析';
+  classBody.innerHTML=html;
+  classFoot.innerHTML='<button class="btn primary" onclick="closeModal()">关闭</button>';
+  showModal();
+}
+
+/* ================= 考勤 ================= */
+function renderAttendance(){
+  const kw=(document.getElementById('attSearch').value||'').toLowerCase();
+  const df=document.getElementById('attDateFilter').value;
+  const cf=document.getElementById('attClassFilter').value;
+  const list=DB.attendance.filter(a=>{
+    const stu=DB.students.find(x=>x.id===a.studentId);
+    return (!kw||(stu?stu.name:'').toLowerCase().includes(kw))&&(!df||a.date===df)&&(!cf||(stu&&stu.classId)===cf);
+  }).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  document.getElementById('attClassFilter').innerHTML='<option value="">全部班级</option>'+DB.classes.map(c=>`<option value="${c.id}" ${c.id===cf?'selected':''}>${esc(c.name)}</option>`).join('');
+  const tb=document.getElementById('attBody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="7"><div class="empty"><span class="ic">📅</span>暂无考勤记录</div></td></tr>';return;}
+  tb.innerHTML=list.map(a=>{
+    const stu=DB.students.find(x=>x.id===a.studentId);
+    const map={出勤:'tag green',迟到:'tag orange',早退:'tag orange',请假:'tag gray',缺勤:'tag red'};
+    const proof=a.photo||a.location?`<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">${a.photo?`<img src="${a.photo}" style="width:44px;height:34px;object-fit:cover;border-radius:6px;border:1px solid var(--gray-200);cursor:pointer" onclick="window.open('${a.photo}')" title="点击查看照片">`:''}${a.location?`<span class="tag blue" title="${esc(a.location.addr||('经纬度：'+a.location.lat+', '+a.location.lng))}">📍</span>`:''}</div>`:'<span style="color:var(--gray-300)">—</span>';
+    return `<tr>
+      <td>${fmtDate(a.date)}</td><td><span class="td-name">${stu?esc(stu.name):'—'}</span></td>
+      <td>${stu?esc(classById(stu.classId).name||'未分班'):'—'}</td>
+      <td><span class="tag ${map[a.status]||'tag gray'}">${esc(a.status)}</span></td>
+      <td>${esc(a.remark||'—')}</td>
+      <td>${proof}</td>
+      <td><div class="actions"><button class="btn sm edit" onclick="openAttendanceModal('${a.id}')">编辑</button><button class="btn sm danger" onclick="delAttendance('${a.id}')">删除</button></div></td></tr>`;
+  }).join('');
+}
+function openAttendanceModal(id){
+  const a=id?DB.attendance.find(x=>x.id===id):{};
+  const stuSel=`<option value="">请选择学生</option>`+DB.students.map(x=>`<option value="${x.id}" ${a.studentId===x.id?'selected':''}>${esc(x.name)}（${esc(x.no)}）</option>`).join('');
+  classTitle.textContent=id?'编辑考勤':'记录考勤';
+  classBody.innerHTML=`
+    <div class="form-grid">
+      <div class="form-item"><label>学生<span class="req">*</span></label><select id="f_stu">${stuSel}</select></div>
+      <div class="form-item"><label>日期<span class="req">*</span></label><input id="f_date" type="date" value="${a.date||today()}"></div>
+      <div class="form-item"><label>状态</label><select id="f_status"><option ${a.status==='出勤'?'selected':''}>出勤</option><option ${a.status==='迟到'?'selected':''}>迟到</option><option ${a.status==='早退'?'selected':''}>早退</option><option ${a.status==='请假'?'selected':''}>请假</option><option ${a.status==='缺勤'?'selected':''}>缺勤</option></select></div>
+      <div class="form-item"><label>备注</label><input id="f_remark" value="${esc(a.remark||'')}" placeholder="如：病假/事假等"></div>
+    </div>`;
+  classFoot.innerHTML=`<button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="saveAttendance('${id||''}')">保存</button>`;
+  showModal();
+}
+function saveAttendance(id){
+  const st=document.getElementById('f_stu').value,date=document.getElementById('f_date').value;
+  if(!st){toast('请选择学生');return;}if(!date){toast('请选择日期');return;}
+  const d={studentId:st,date,status:document.getElementById('f_status').value,remark:document.getElementById('f_remark').value.trim()};
+  if(id){Object.assign(DB.attendance.find(x=>x.id===id),d);addFeed('更新考勤记录','blue');}
+  else{d.id=uid('att');DB.attendance.push(d);addFeed(`记录考勤：${d.status}`,'blue');}
+  save();closeModal();renderAttendance();renderDashboard();toast('保存成功');
+}
+function delAttendance(id){
+  confirm('确定删除该条考勤记录？',()=>{DB.attendance=DB.attendance.filter(x=>x.id!==id);save();addFeed('删除考勤记录','red');renderAttendance();renderDashboard();toast('已删除');});
+}
+function openAttStats(){
+  if(!DB.attendance.length){toast('暂无考勤数据');return;}
+  const map={};
+  DB.attendance.forEach(a=>{const stu=DB.students.find(x=>x.id===a.studentId);if(!stu)return;const cid=stu.classId||'无';map[cid]=map[cid]||{total:0,出勤:0,迟到:0,早退:0,请假:0,缺勤:0};map[cid].total++;map[cid][a.status]++;});
+  let html='';
+  Object.entries(map).forEach(([cid,o])=>{
+    const rate=(o.出勤/o.total*100).toFixed(0);
+    html+=`<div style="margin-bottom:16px">
+      <div class="mini-stat"><span class="k">${classById(cid).name||'未分班'}</span><span class="v">出勤率 ${rate}%</span></div>
+      <div class="bar"><i style="width:${rate}%"></i></div>
+      <div class="progress-label" style="margin-top:6px">
+        <span class="tag green">出勤 ${o.出勤}</span><span class="tag orange">迟到 ${o.迟到}</span><span class="tag orange">早退 ${o.早退}</span><span class="tag gray">请假 ${o.请假}</span><span class="tag red">缺勤 ${o.缺勤}</span>
+      </div></div>`;
+  });
+  classTitle.textContent='出勤统计';
+  classBody.innerHTML=html;
+  classFoot.innerHTML='<button class="btn primary" onclick="closeModal()">关闭</button>';
+  showModal();
+}
+function openClassLogs(){
+  const logs=(DB.classLogs||[]).slice().reverse();
+  const kw=(document.getElementById('attSearch').value||'').toLowerCase();
+  const list=kw?logs.filter(l=>(l.courseName||'').toLowerCase().includes(kw)||(l.teacherName||'').toLowerCase().includes(kw)||(classById(l.classId).name||'').toLowerCase().includes(kw)):logs;
+  if(!list.length){classTitle.textContent='课堂打卡记录';classBody.innerHTML='<div class="empty"><span class="ic">🕐</span>暂无课堂打卡记录</div>';classFoot.innerHTML='<button class="btn primary" onclick="closeModal()">关闭</button>';showModal();return;}
+  let html=`<div style="max-height:420px;overflow:auto"><table class="tbl">
+    <thead><tr><th>日期</th><th>时间</th><th>班级</th><th>课程</th><th>教师</th><th>凭证</th></tr></thead><tbody>`;
+  list.forEach(l=>{
+    const c=classById(l.classId);
+    const proof=l.photo||l.location?`<div style="display:flex;gap:6px;align-items:center;justify-content:center">${l.photo?`<img src="${l.photo}" style="width:44px;height:34px;object-fit:cover;border-radius:6px;border:1px solid var(--gray-200);cursor:pointer" onclick="window.open('${l.photo}')" title="点击查看照片">`:''}${l.location?`<span class="tag blue" title="${esc(l.location.addr||('经纬度：'+l.location.lat+', '+l.location.lng))}">📍</span>`:''}</div>`:'—';
+    html+=`<tr><td>${fmtDate(l.date)}</td><td>${esc(l.time||'—')}</td><td>${c?esc(c.name):'—'}</td><td>${esc(l.courseName||'—')}</td><td>${esc(l.teacherName||'—')}</td><td>${proof}</td></tr>`;
+  });
+  html+='</tbody></table></div>';
+  classTitle.textContent='课堂打卡记录（'+list.length+'）';
+  classBody.innerHTML=html;
+  classFoot.innerHTML='<button class="btn primary" onclick="closeModal()">关闭</button>';
+  showModal();
+}
+
+/* ================= 宿舍 ================= */
+function renderDormitories(){
+  const kw=(document.getElementById('dormSearch').value||'').toLowerCase();
+  const list=DB.dormitories.filter(d=>!kw||(d.building+d.room).toLowerCase().includes(kw));
+  const tb=document.getElementById('dormBody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="7"><div class="empty"><span class="ic">🛏️</span>暂无宿舍数据</div></td></tr>';return;}
+  tb.innerHTML=list.map(d=>{
+    const residents=DB.students.filter(s=>s.dormId===d.id);
+    const rate=Math.round(residents.length/d.capacity*100);
+    const barColor=rate>=90?'#dc2626':rate>=60?'#d97706':'#059669';
+    const head=residents.find(r=>r.isHead);
+    return `<tr>
+      <td><span class="td-name">${esc(d.building)}</span></td><td>${esc(d.room)}</td>
+      <td>${d.capacity} 床</td><td><span class="tag ${rate>=100?'red':rate>=60?'orange':'green'}">${residents.length}/${d.capacity}</span></td>
+      <td><div class="bar" style="width:100px"><i style="width:${rate}%;background:${barColor}"></i></div></td>
+      <td>${head?esc(head.name):'—'}</td>
+      <td><div class="actions">
+        <button class="btn sm edit" onclick="openDormModal('${d.id}')">编辑</button>
+        <button class="btn sm" onclick="showDormMembers('${d.id}')">成员</button>
+        <button class="btn sm danger" onclick="delDorm('${d.id}')">删除</button>
+      </div></td></tr>`;
+  }).join('');
+}
+function openDormModal(id){
+  const d=id?DB.dormitories.find(x=>x.id===id):{};
+  classTitle.textContent=id?'编辑宿舍':'添加宿舍';
+  classBody.innerHTML=`
+    <div class="form-grid">
+      <div class="form-item"><label>楼栋<span class="req">*</span></label><input id="f_building" value="${esc(d.building||'')}" placeholder="如：1号宿舍楼"></div>
+      <div class="form-item"><label>房间号<span class="req">*</span></label><input id="f_room" value="${esc(d.room||'')}" placeholder="如：301"></div>
+      <div class="form-item"><label>床位容量</label><input id="f_capacity" type="number" min="1" max="12" value="${d.capacity||4}"></div>
+      <div class="form-item"><label>备注</label><input id="f_remark" value="${esc(d.remark||'')}"></div>
+    </div>`;
+  classFoot.innerHTML=`<button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="saveDorm('${id||''}')">保存</button>`;
+  showModal();
+}
+function saveDorm(id){
+  const b=document.getElementById('f_building').value.trim(),r=document.getElementById('f_room').value.trim();
+  if(!b){toast('请填写楼栋');return;}if(!r){toast('请填写房间号');return;}
+  const cap=parseInt(document.getElementById('f_capacity').value)||4;
+  const d={building:b,room:r,capacity:cap,remark:document.getElementById('f_remark').value.trim()};
+  if(id){Object.assign(DB.dormitories.find(x=>x.id===id),d);addFeed(`更新宿舍 ${b} ${r}`,'blue');}
+  else{d.id=uid('dorm');DB.dormitories.push(d);addFeed(`添加宿舍 ${b} ${r}`,'blue');}
+  save();closeModal();renderDormitories();renderDashboard();toast('保存成功');
+}
+function delDorm(id){
+  const d=DB.dormitories.find(x=>x.id===id);
+  const residents=DB.students.filter(s=>s.dormId===id).length;
+  confirm(`确定删除宿舍「${d.building} ${d.room}」？${residents} 名学生将变为未分配宿舍。`,()=>{
+    DB.dormitories=DB.dormitories.filter(x=>x.id!==id);
+    DB.students.forEach(s=>{if(s.dormId===id)s.dormId='';});
+    save();addFeed(`删除宿舍 ${d.building} ${d.room}`,'red');renderDormitories();renderDashboard();toast('已删除');
+  });
+}
+function showDormMembers(id){
+  const d=DB.dormitories.find(x=>x.id===id);
+  const residents=DB.students.filter(s=>s.dormId===id);
+  classTitle.textContent=`${d.building} ${d.room} · 宿舍成员`;
+  if(!residents.length){classBody.innerHTML='<div class="empty"><span class="ic">🛏️</span>暂无成员入住</div>';}
+  else{
+    classBody.innerHTML=residents.map(s=>`<div class="mini-stat"><span>${esc(s.name)}（${esc(s.no)}）</span><span class="v">${esc(classById(s.classId).name||'未分班')}</span></div>`).join('');
+  }
+  classFoot.innerHTML='<button class="btn primary" onclick="closeModal()">关闭</button>';
+  showModal();
+}
+
+/* ================= 通用模态 ================= */
+function showModal(){document.getElementById('modalMask').classList.add('show');}
+function closeModal(){document.getElementById('modalMask').classList.remove('show');}
+const classTitle=document.getElementById('modalTitle'),classBody=document.getElementById('modalBody'),classFoot=document.getElementById('modalFoot');
+document.getElementById('modalMask').addEventListener('click',e=>{if(e.target.id==='modalMask')closeModal();});
+let _confirmFn=null;
+function confirm(msg,fn){
+  _confirmFn=fn;
+  classTitle.textContent='确认操作';
+  classBody.innerHTML=`<div class="msg">${esc(msg)}</div>`;
+  classFoot.innerHTML=`<button class="btn" onclick="closeModal()">取消</button><button class="btn danger" onclick="doConfirm()">确定</button>`;
+  showModal();
+}
+function doConfirm(){closeModal();if(_confirmFn)_confirmFn();_confirmFn=null;}
+function openTitle(t){classTitle.textContent=t;}
+
+/* ================= 仪表盘 ================= */
+function renderDashboard(){
+  document.getElementById('stStudents').textContent=DB.students.length;
+  document.getElementById('stTeachers').textContent=DB.teachers.length;
+  document.getElementById('stClasses').textContent=DB.classes.length;
+  document.getElementById('stCourses').textContent=DB.courses.length;
+  const cap=DB.dormitories.reduce((a,d)=>a+d.capacity,0),occ=DB.students.filter(s=>s.dormId).length;
+  document.getElementById('stDorm').textContent=cap?Math.round(occ/cap*100)+'%':'—';
+  const todayAtt=DB.attendance.filter(a=>a.date===today());
+  const attRate=todayAtt.length?Math.round(todayAtt.filter(a=>a.status==='出勤').length/todayAtt.length*100)+'%':'—';
+  document.getElementById('stAtt').textContent=attRate;
+  /* 年级概况 */
+  const grades=['高一','高二','高三','初一','初二','初三','大一','大二','大三','大四'];
+  const byGrade={};
+  DB.classes.forEach(c=>{byGrade[c.grade]=byGrade[c.grade]||{cls:0,stu:0};byGrade[c.grade].cls++;byGrade[c.grade].stu+=classStudents(c.id).length;});
+  const ghtml=grades.filter(g=>byGrade[g]).map(g=>{
+    const p=byGrade[g],max=Math.max(...Object.values(byGrade).map(x=>x.stu),1);
+    return `<div class="mini-stat"><span class="k">${g}</span><span class="v">${p.cls} 班 · ${p.stu} 人</span></div>
+      <div class="bar"><i style="width:${Math.round(p.stu/max*100)}%"></i></div>`;
+  }).join('');
+  document.getElementById('gradeOverview').innerHTML=ghtml||'<div class="empty">暂无班级数据</div>';
+  /* 课程热度 */
+  const hot={};
+  DB.scores.forEach(s=>{hot[s.courseId]=(hot[s.courseId]||0)+1;});
+  const top5=Object.entries(hot).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  document.getElementById('courseTop').innerHTML=top5.length?top5.map(([cid,n],i)=>{
+    const c=DB.courses.find(x=>x.id===cid),max=top5[0][1];
+    return `<div class="mini-stat"><span class="k">${i+1}. ${c?esc(c.name):'未知'}</span><span class="v">${n} 人</span></div><div class="bar"><i style="width:${Math.round(n/max*100)}%"></i></div>`;
+  }).join(''):'<div class="empty">暂无成绩数据</div>';
+  /* 动态 */
+  const feed=document.getElementById('feedTimeline');
+  feed.innerHTML=DB.feed.length?DB.feed.slice(0,12).map(f=>{
+    const dot={blue:'blue',red:'red',green:'green'}[f.type]||'blue';
+    return `<div class="tl"><div class="dot ${dot}"></div><div><div class="t">${esc(f.text)}</div><div class="d">${esc(f.time)}</div></div></div>`;
+  }).join(''):'<div class="empty">暂无动态</div>';
+}
+function refreshAll(){renderDashboard();if(document.querySelector('.view.active').id==='view-students')renderStudents();}
+
+/* ================= 数据导出导入 ================= */
+function download(name,content,mime){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type:mime||'application/octet-stream'}));
+  a.download=name;a.click();URL.revokeObjectURL(a.href);
+}
+function downloadCsv(name,rows){
+  const csv=rows.map(r=>r.map(c=>'"'+String(c==null?'':c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  download(name,'\ufeff'+csv,'text/csv;charset=utf-8');
+}
+function exportData(){
+  download('校园管理系统数据_'+today()+'.json',JSON.stringify(DB,null,2),'application/json');
+  toast('数据已导出');
+}
+function importData(){document.getElementById('fileInput').click();}
+function handleImport(e){
+  const f=e.target.files[0];if(!f)return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const d=JSON.parse(reader.result);
+      if(!d||!Array.isArray(d.classes))throw 0;
+      DB=Object.assign({},STORE,{feed:[]},d);
+      save();renderAll();toast('数据导入成功');
+    }catch(err){toast('导入失败：文件格式不正确');}
+  };
+  reader.readAsText(f);e.target.value='';
+}
+function renderAll(){Object.keys(VIEWS).forEach(v=>go(v));go('dashboard');}
+function confirmReset(){
+  confirm('确定恢复演示数据？当前所有数据将被覆盖。',()=>{
+    seed();save();renderAll();toast('已重置为演示数据');
+  });
+}
+function today(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+
+/* ================= 演示数据 ================= */
+function seed(){
+  const now=Date.now();
+  const teachers=[
+    {id:'t1',no:'T2026001',name:'王建国',sex:'男',subject:'语文',title:'高级',phone:'13800000001',remark:''},
+    {id:'t2',no:'T2026002',name:'李秀英',sex:'女',subject:'数学',title:'特级',phone:'13800000002',remark:''},
+    {id:'t3',no:'T2026003',name:'张伟',sex:'男',subject:'英语',title:'中级',phone:'13800000003',remark:''},
+    {id:'t4',no:'T2026004',name:'刘洋',sex:'女',subject:'物理',title:'高级',phone:'13800000004',remark:''},
+    {id:'t5',no:'T2026005',name:'陈静',sex:'女',subject:'化学',title:'中级',phone:'13800000005',remark:''},
+    {id:'t6',no:'T2026006',name:'赵磊',sex:'男',subject:'生物',title:'初级',phone:'13800000006',remark:''},
+    {id:'t7',no:'T2026007',name:'孙丽',sex:'女',subject:'历史',title:'高级',phone:'13800000007',remark:''},
+    {id:'t8',no:'T2026008',name:'周杰',sex:'男',subject:'地理',title:'中级',phone:'13800000008',remark:''},
+    {id:'t9',no:'T2026009',name:'吴敏',sex:'女',subject:'信息技术',title:'高级',phone:'13800000009',remark:''}
+  ];
+  const classes=[
+    {id:'c1',name:'高一（1）班',grade:'高一',teacherId:'t1',teacherName:'王建国',room:'教学楼A-301'},
+    {id:'c2',name:'高一（2）班',grade:'高一',teacherId:'t2',teacherName:'李秀英',room:'教学楼A-302'},
+    {id:'c3',name:'高二（1）班',grade:'高二',teacherId:'t3',teacherName:'张伟',room:'教学楼B-201'},
+    {id:'c4',name:'高二（2）班',grade:'高二',teacherId:'t4',teacherName:'刘洋',room:'教学楼B-202'},
+    {id:'c5',name:'高三（1）班',grade:'高三',teacherId:'t5',teacherName:'陈静',room:'教学楼C-101'}
+  ];
+  const courses=[
+    {id:'u1',name:'语文',code:'YW101',credit:2,teacherId:'t1',teacherName:'王建国',sessions:[
+      {id:'se1',day:1,period:1,classIds:['c1','c2'],room:'教学楼A-301'},
+      {id:'se2',day:3,period:3,classIds:['c3'],room:'教学楼B-201'}
+    ],remark:''},
+    {id:'u2',name:'数学',code:'SX101',credit:4,teacherId:'t2',teacherName:'李秀英',sessions:[
+      {id:'se3',day:1,period:3,classIds:['c1'],room:'教学楼A-302'},
+      {id:'se4',day:4,period:1,classIds:['c2'],room:'教学楼A-302'}
+    ],remark:''},
+    {id:'u3',name:'英语',code:'YY101',credit:2,teacherId:'t3',teacherName:'张伟',sessions:[
+      {id:'se5',day:2,period:1,classIds:['c1','c2'],room:'教学楼B-201'},
+      {id:'se6',day:5,period:3,classIds:['c4'],room:'教学楼B-202'}
+    ],remark:''},
+    {id:'u4',name:'物理',code:'WL101',credit:3,teacherId:'t4',teacherName:'刘洋',sessions:[
+      {id:'se7',day:3,period:3,classIds:['c1','c2'],room:'物理实验室'},
+      {id:'se8',day:2,period:5,classIds:['c3','c4'],room:'物理实验室'}
+    ],remark:''},
+    {id:'u5',name:'化学',code:'HX101',credit:2,teacherId:'t5',teacherName:'陈静',sessions:[
+      {id:'se9',day:4,period:5,classIds:['c1','c2'],room:'化学实验室'}
+    ],remark:''},
+    {id:'u6',name:'历史',code:'LS101',credit:2,teacherId:'t7',teacherName:'孙丽',sessions:[
+      {id:'se10',day:5,period:1,classIds:['c1','c2','c3'],room:'教学楼C-101'}
+    ],remark:''}
+  ];
+  const dormitories=[
+    {id:'d1',building:'1号宿舍楼',room:'101',capacity:4,remark:''},
+    {id:'d2',building:'1号宿舍楼',room:'102',capacity:4,remark:''},
+    {id:'d3',building:'2号宿舍楼',room:'201',capacity:4,remark:''},
+    {id:'d4',building:'2号宿舍楼',room:'202',capacity:4,remark:''}
+  ];
+  const students=[
+    {id:'s1',no:'2026001',name:'张三',sex:'男',classId:'c1',dormId:'d1',phone:'13900000001',remark:''},
+    {id:'s2',no:'2026002',name:'李四',sex:'男',classId:'c1',dormId:'d1',phone:'13900000002',remark:''},
+    {id:'s3',no:'2026003',name:'王五',sex:'女',classId:'c1',dormId:'d2',phone:'13900000003',remark:''},
+    {id:'s4',no:'2026004',name:'赵六',sex:'女',classId:'c2',dormId:'d2',phone:'13900000004',remark:''},
+    {id:'s5',no:'2026005',name:'钱七',sex:'男',classId:'c2',dormId:'d3',phone:'13900000005',remark:''},
+    {id:'s6',no:'2026006',name:'孙八',sex:'女',classId:'c3',dormId:'d4',phone:'13900000006',remark:''},
+    {id:'s7',no:'2026007',name:'周九',sex:'男',classId:'c4',dormId:'d1',phone:'13900000007',remark:''},
+    {id:'s8',no:'2026008',name:'吴十',sex:'女',classId:'c5',dormId:'d2',phone:'13900000008',remark:''}
+  ];
+  const scores=[
+    {id:'k1',studentId:'s1',courseId:'u1',examType:'期中考试',semester:'2025-2026学年 第一学期',score:92},
+    {id:'k2',studentId:'s2',courseId:'u1',examType:'期中考试',semester:'2025-2026学年 第一学期',score:85},
+    {id:'k3',studentId:'s3',courseId:'u2',examType:'期中考试',semester:'2025-2026学年 第一学期',score:78},
+    {id:'k4',studentId:'s4',courseId:'u2',examType:'期中考试',semester:'2025-2026学年 第一学期',score:88},
+    {id:'k5',studentId:'s5',courseId:'u3',examType:'期中考试',semester:'2025-2026学年 第一学期',score:65},
+    {id:'k6',studentId:'s6',courseId:'u4',examType:'期中考试',semester:'2025-2026学年 第一学期',score:58},
+    {id:'k7',studentId:'s7',courseId:'u5',examType:'期中考试',semester:'2025-2026学年 第一学期',score:90},
+    {id:'k8',studentId:'s8',courseId:'u6',examType:'期中考试',semester:'2025-2026学年 第一学期',score:73},
+    {id:'k9',studentId:'s1',courseId:'u2',examType:'月考',semester:'2025-2026学年 第一学期',score:95},
+    {id:'k10',studentId:'s3',courseId:'u1',examType:'月考',semester:'2025-2026学年 第一学期',score:88},
+    {id:'k11',studentId:'s4',courseId:'u3',examType:'月考',semester:'2025-2026学年 第一学期',score:91},
+    {id:'k12',studentId:'s6',courseId:'u4',examType:'月考',semester:'2025-2026学年 第一学期',score:72}
+  ];
+  const attendance=[
+    {id:'a1',studentId:'s1',date:'2026-08-10',status:'出勤',remark:''},
+    {id:'a2',studentId:'s2',date:'2026-08-10',status:'迟到',remark:'交通拥堵'},
+    {id:'a3',studentId:'s3',date:'2026-08-10',status:'出勤',remark:''},
+    {id:'a4',studentId:'s4',date:'2026-08-11',status:'请假',remark:'生病就医'},
+    {id:'a5',studentId:'s5',date:'2026-08-11',status:'出勤',remark:''},
+    {id:'a6',studentId:'s6',date:'2026-08-12',status:'缺勤',remark:'未说明原因'},
+    {id:'a7',studentId:'s7',date:'2026-08-12',status:'出勤',remark:''},
+    {id:'a8',studentId:'s8',date:'2026-08-13',status:'早退',remark:'家中有事'}
+  ];
+  const feed=[
+    {text:'系统初始化，载入演示数据',type:'blue',time:'2026-08-16 09:00:00'}
+  ];
+  const users=[
+    {id:'uadmin',no:'admin',name:'系统管理员',role:'admin',refId:'',password:'admin123',remark:'管理员账号'},
+    ...teachers.map(t=>({id:'ut_'+t.id,no:t.no,name:t.name,role:'teacher',refId:t.id,password:'123456',remark:''})),
+    ...students.map(s=>({id:'us_'+s.id,no:s.no,name:s.name,role:'student',refId:s.id,password:'123456',remark:''}))
+  ];
+  DB={classes,students,teachers,courses,dormitories,scores,attendance,classLogs:[],feed,users};
+  save();
+}
+
+/* ================= 扫码落地页路由 ================= */
+let LANDING_CLASS_ID=null,LANDING_ROLE=null,LANDING_USER_ID=null,LANDING_PENDING=null;
+function landingShow(){
+  if(typeof closeModal==='function')closeModal();
+  document.getElementById('landingPage').style.display='block';
+  document.querySelector('.sidebar').style.display='none';
+  document.querySelector('.main').style.display='none';
+  document.getElementById('loginPage').style.display='none';
+}
+function landingHide(){
+  document.getElementById('landingPage').style.display='none';
+  document.querySelector('.sidebar').style.display='';
+  document.querySelector('.main').style.display='';
+}
+function landingExit(){location.hash='';landingHide();if(CURRENT_USER)afterLogin();else showLoginPage();}
+function parseLandingHash(){
+  const h=location.hash||'';
+  let m=h.match(/^#\/u\/([^\/]+)$/);
+  if(m)return {type:'user',id:decodeURIComponent(m[1])};
+  m=h.match(/^#\/c\/([^\/]+)$/);
+  if(m)return {type:'class',id:decodeURIComponent(m[1])};
+  return null;
+}
+/* 拍照：拉起相机（移动端优先 capture，桌面端可选文件） */
+function landingTakePhoto(cb){
+  const input=document.createElement('input');
+  input.type='file';input.accept='image/*';input.capture='environment';
+  input.onchange=()=>{
+    const f=input.files&&input.files[0];
+    if(!f){toast('未选择照片');return;}
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        const maxW=640;const scale=Math.min(1,maxW/img.width);
+        const cv=document.createElement('canvas');
+        cv.width=Math.round(img.width*scale);cv.height=Math.round(img.height*scale);
+        cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+        cb(cv.toDataURL('image/jpeg',0.6));
+      };
+      img.onerror=()=>{toast('照片读取失败');};
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(f);
+  };
+  input.click();
+}
+/* 定位：经纬度 + 反向地理编码（如失败仅存坐标） */
+function getLocation(cb){
+  if(!navigator.geolocation){cb(null);return;}
+  navigator.geolocation.getCurrentPosition(
+    p=>{
+      const lat=+p.coords.latitude.toFixed(6),lng=+p.coords.longitude.toFixed(6);
+      fetch(`https://restapi.amap.com/v3/geocode/regeo?key=__AMAP_KEY__&location=${lng},${lat}`)
+        .then(r=>r.json()).then(j=>{
+          const addr=j&&j.regeocode&&j.regeocode.formatted_address?j.regeocode.formatted_address:'';
+          cb({lat,lng,addr});
+        }).catch(()=>cb({lat,lng,addr:''}));
+    },
+    ()=>{cb(null);},
+    {enableHighAccuracy:true,timeout:8000,maximumAge:30000}
+  );
+}
+function landingInit(){
+  const p=parseLandingHash();
+  if(p){
+    if(p.type==='user'){LANDING_USER_ID=p.id;landingShow();landingUserShow();}
+    else{LANDING_CLASS_ID=p.id;LANDING_ROLE=null;landingShow();landingRenderHome();}
+  }
+}
+window.addEventListener('hashchange',()=>{const p=parseLandingHash();if(p){if(p.type==='user'){LANDING_USER_ID=p.id;landingShow();landingUserShow();}else{LANDING_CLASS_ID=p.id;LANDING_ROLE=null;landingShow();landingRenderHome();}}else{landingHide();}});
+/* 统一入口：已登录按身份分流，未登录先登录（含登录页联动） */
+function landingRenderHome(){
+  const cid=LANDING_CLASS_ID;const c=classById(cid);
+  const lc=document.getElementById('landingCard');
+  if(!c.id){lc.innerHTML=`<div class="l-warn">班级不存在或数据已重置<br><button class="btn l-btn" onclick="landingExit()">返回系统</button></div>`;return;}
+  lc.innerHTML=`
+    <div class="l-logo">🏫</div>
+    <div class="l-title">${esc(c.name)}</div>
+    <div class="l-sub">${esc(c.teacherName?('班主任：'+c.teacherName):'')} · ${esc(c.room||'')}</div>
+    <div class="l-actions" style="grid-template-columns:1fr;">
+      <div class="role-btn" onclick="landingCheckLogin()"><div class="r-ic">📱</div><div class="r-t">扫码签到 / 打卡</div><div class="r-d">扫码后按身份自动进入签到或打卡</div></div>
+    </div>
+    <div class="l-tip">已登录账号：${CURRENT_USER?esc(CURRENT_USER.name)+'（'+esc(CURRENT_USER.no)+'）':'未登录'}<br>${CURRENT_USER?'将自动识别您的身份':'请先使用学号/工号登录，再完成签到或打卡'}</div>`;
+}
+/* 统一入口：已登录按身份分流，未登录先登录 */
+function landingCheckLogin(){
+  if(CURRENT_USER){
+    const u=CURRENT_USER;
+    if(u.role==='teacher'){LANDING_ROLE='teacher';landingRenderTeacherPunch(u.refId);}
+    else if(u.role==='student'){LANDING_ROLE='student';landingStudentShow(u.refId);}
+    else{toast('管理员账号不能在此签到');}
+    return;
+  }
+  LANDING_PENDING=true;
+  document.getElementById('landingPage').style.display='none';
+  document.querySelector('.sidebar').style.display='none';
+  document.querySelector('.main').style.display='none';
+  showLoginPage();
+  document.getElementById('loginErr').textContent='请先登录，再返回班级页面完成签到/打卡';
+}
+function landingBack(){
+  if(LANDING_ROLE==='teacher'){landingRenderTeacherLogin();}
+  else if(LANDING_ROLE==='student'){landingRenderStudentLogin();}
+  else{LANDING_ROLE=null;landingRenderHome();}
+}
+function landingBackHome(){if(!LANDING_CLASS_ID||!classById(LANDING_CLASS_ID)){landingExit();return;}LANDING_ROLE=null;landingRenderHome();}
+
+/* ---------- 教师：验证身份（不显示他人） ---------- */
+function landingRenderTeacherLogin(){
+  const cid=LANDING_CLASS_ID;const c=classById(cid);
+  const lc=document.getElementById('landingCard');
+  lc.innerHTML=`
+    <div class="l-logo">👩‍🏫</div>
+    <div class="l-title">${esc(c.name)} · 教师打卡</div>
+    <div class="l-sub">请输入工号验证身份（仅本人可打卡）</div>
+    <input id="landingTeacherNo" class="l-login-input" placeholder="教师工号" style="text-align:center">
+    <button class="btn primary l-btn" onclick="landingTeacherVerify()">确认打卡</button>
+    <button class="l-back" onclick="landingBackHome()">← 返回</button>`;
+}
+function landingTeacherVerify(){
+  const no=document.getElementById('landingTeacherNo').value.trim();
+  const u=userByNo(no);
+  if(!u||u.role!=='teacher'){toast('工号不存在或非教师账号');return;}
+  const t=DB.teachers.find(x=>x.id===u.refId);
+  if(!t){toast('教师信息不存在');return;}
+  landingRenderTeacherPunch(t.id);
+}
+/* 教师打卡：拍照 + 定位 + 确认 */
+let LANDING_PHOTO=null,LANDING_LOC=null,LANDING_PUNCH_TID=null,LANDING_PUNCH_COURSE=null;
+function landingRenderTeacherPunch(tid){
+  LANDING_ROLE='teacher';
+  const cid=LANDING_CLASS_ID;const c=classById(cid);
+  const t=DB.teachers.find(x=>x.id===tid);
+  const myCourses=DB.courses.filter(cou=>cou.teacherId===tid&&classIdsForCourse(cou.id).includes(cid));
+  const lc=document.getElementById('landingCard');
+  lc.innerHTML=`
+    <div class="l-logo">👩‍🏫</div>
+    <div class="l-title">${esc(t.name)} · 打卡</div>
+    <div class="l-sub">${esc(c.name)} · 选择今日要打卡的课程</div>
+    <div class="l-actions" style="grid-template-columns:1fr;">
+      ${myCourses.length?myCourses.map(cou=>`<div class="role-btn" onclick="landingTeacherCourse('${tid}','${cou.id}')"><div class="r-t">${esc(cou.name)}</div><div class="r-d">${esc(cou.teacherName||'')}</div></div>`).join(''):'<div class="role-btn" style="grid-column:1/-1"><div class="r-t">暂无排课</div><div class="r-d">该班级没有安排您的课程</div></div>'}
+      <button class="l-back" onclick="landingBack()">← 返回</button>
+    </div>`;
+}
+function landingTeacherCourse(tid,couId){
+  LANDING_PHOTO=null;LANDING_LOC=null;LANDING_PUNCH_TID=tid;LANDING_PUNCH_COURSE=couId;
+  const c=classById(LANDING_CLASS_ID);
+  const cou=DB.courses.find(x=>x.id===couId);
+  const lc=document.getElementById('landingCard');
+  lc.innerHTML=`
+    <div class="l-logo">📸</div>
+    <div class="l-title">${esc(c.name)} · ${esc(cou.name)}</div>
+    <div class="l-sub">上课打卡 · 请完成以下两步</div>
+    <div class="l-photo-box">
+      <div class="l-photo-thumb" id="lp_thumb" onclick="landingTeacherPhoto()">点击拍照</div>
+    </div>
+    <div class="l-loc-box" id="lp_loc">📍 定位：<span id="lp_locVal">未获取</span> <button class="btn sm" style="margin-left:6px" onclick="landingTeacherLoc()">获取定位</button></div>
+    <button class="btn primary l-btn" id="lp_submit" onclick="landingTeacherPunch()">✅ 提交打卡</button>
+    <button class="l-back" onclick="landingRenderTeacherPunch('${tid}')">← 返回</button>`;
+}
+function landingTeacherPhoto(){
+  landingTakePhoto(d=>{
+    LANDING_PHOTO=d;
+    const el=document.getElementById('lp_thumb');
+    if(el)el.innerHTML=`<img src="${d}" alt="打卡照片">`;
+  });
+}
+function landingTeacherLoc(){
+  const el=document.getElementById('lp_locVal');if(el)el.textContent='定位中…';
+  getLocation(loc=>{
+    if(!loc){const t=document.getElementById('lp_locVal');if(t)t.textContent='定位失败（可手动提交）';return;}
+    LANDING_LOC=loc;
+    const t=document.getElementById('lp_locVal');
+    if(t)t.innerHTML=`${loc.addr?esc(loc.addr)+'<br>':'<br>'}经纬度：${loc.lat}, ${loc.lng}`;
+  });
+}
+function landingTeacherPunch(){
+  const tid=LANDING_PUNCH_TID,couId=LANDING_PUNCH_COURSE;
+  const cid=LANDING_CLASS_ID;const c=classById(cid);
+  const cou=DB.courses.find(x=>x.id===couId);
+  const t=DB.teachers.find(x=>x.id===tid);
+  if(!cou||!t){toast('数据不存在');return;}
+  const now=new Date();const hm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  const rec={id:uid('clog'),classId:cid,courseId:couId,courseName:cou.name,teacherId:tid,teacherName:t.name||'',date:today(),time:hm,ts:Date.now()};
+  if(LANDING_PHOTO)rec.photo=LANDING_PHOTO;
+  if(LANDING_LOC)rec.location=LANDING_LOC;
+  if(!Array.isArray(DB.classLogs))DB.classLogs=[];
+  DB.classLogs.push(rec);
+  if(DB.classLogs.length>500)DB.classLogs=DB.classLogs.slice(-500);
+  save();
+  addFeed(`教师打卡上课：${c.name} · ${cou.name}`,'blue');
+  const lc=document.getElementById('landingCard');
+  lc.innerHTML=`
+    <div class="l-logo" style="background:linear-gradient(135deg,#059669,#10b981)"><div class="ok">✓</div></div>
+    <div class="l-msg">打卡成功</div>
+    <div class="l-detail">${esc(c.name)} · ${esc(cou.name)}<br>教师：${esc(t.name)}<br>时间：${today()} ${hm}</div>
+    ${LANDING_PHOTO?`<img src="${LANDING_PHOTO}" style="width:120px;height:90px;object-fit:cover;border-radius:8px;margin-top:10px;border:1px solid var(--gray-200)">`:''}
+    ${LANDING_LOC?`<div class="l-loc-box">📍 ${esc(LANDING_LOC.addr||('经纬度：'+LANDING_LOC.lat+', '+LANDING_LOC.lng))}</div>`:''}
+    <button class="btn primary l-btn" onclick="landingBackHome()">返回</button>`;
+}
+function classIdsForCourse(couId){
+  const c=DB.courses.find(x=>x.id===couId);
+  const ids=new Set();
+  (c.sessions||[]).forEach(s=>{if(Array.isArray(s.classIds))s.classIds.forEach(x=>ids.add(x));});
+  return Array.from(ids);
+}
+
+/* ---------- 学生：扫码确认（不暴露他人名单） ---------- */
+function landingRenderStudentLogin(){
+  const cid=LANDING_CLASS_ID;const c=classById(cid);
+  const lc=document.getElementById('landingCard');
+  lc.innerHTML=`
+    <div class="l-logo">👨‍🎓</div>
+    <div class="l-title">${esc(c.name)} · 学生签到</div>
+    <div class="l-sub">请输入学号验证身份（仅本人可签到）</div>
+    <input id="landingStudentNo" class="l-login-input" placeholder="学生学号" style="text-align:center">
+    <button class="btn primary l-btn" onclick="landingStudentVerify()">确认签到</button>
+    <button class="l-back" onclick="landingBackHome()">← 返回</button>`;
+}
+function landingStudentVerify(){
+  const no=document.getElementById('landingStudentNo').value.trim();
+  const u=userByNo(no);
+  if(!u||u.role!=='student'){toast('学号不存在或非学生账号');return;}
+  const s=DB.students.find(x=>x.id===u.refId);
+  if(!s){toast('学生信息不存在');return;}
+  landingStudentShow(s.id);
+}
+function landingStudentShow(sid){
+  const s=DB.students.find(x=>x.id===sid);if(!s){toast('学生不存在');return;}
+  const cls=classById(s.classId);
+  const todayIdx=new Date().getDay();const dayNum=todayIdx===0?7:todayIdx;
+  const sessions=(DB.courses||[]).flatMap(cou=>(cou.sessions||[]).filter(se=>se.day===dayNum&&(se.classIds||[]).includes(s.classId)).map(se=>({course:cou,se})));
+  const lc=document.getElementById('landingCard');
+  const signed=DB.attendance.find(a=>a.studentId===sid&&a.date===today()&&a.source==='qr');
+  lc.innerHTML=`
+    <div class="l-logo">👨‍🎓</div>
+    <div class="l-title">${esc(s.name)}</div>
+    <div class="l-sub">${esc(s.no)} · ${esc(cls.name||'未分班')}</div>
+    <div style="text-align:left;margin-top:18px">
+      <div style="font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:8px">📅 今日课程（${WEEKDAYS[dayNum-1]}）</div>
+      ${sessions.length?sessions.map(x=>`<div class="mini-stat"><span class="k">${esc(x.course.name)} · 第${x.se.period}节</span><span class="v">${esc(x.se.room||'')}</span></div>`).join(''):'<div style="font-size:12px;color:var(--gray-400);padding:8px 0">今日暂无课程</div>'}
+    </div>
+    <div style="margin-top:14px">
+      ${signed?`<div class="ok" style="margin-bottom:8px">✓</div><div class="l-msg" style="font-size:15px">今日已签到</div><div class="l-detail">签到时间：${esc(signed.time||'')}</div>${signed.photo?`<img src="${signed.photo}" style="width:120px;height:90px;object-fit:cover;border-radius:8px;margin-top:10px;border:1px solid var(--gray-200)">`:''}${signed.location?`<div class="l-loc-box">📍 ${esc(signed.location.addr||('经纬度：'+signed.location.lat+', '+signed.location.lng))}</div>`:''}`:`<button class="btn primary l-btn" onclick="landingStudentSignPage('${sid}')">✅ 签到上学</button>`}
+    </div>
+    <button class="l-back" onclick="landingBackHome()">← 返回</button>`;
+}
+/* 学生签到：拍照 + 定位 + 确认 */
+let LANDING_STU_PHOTO=null,LANDING_STU_LOC=null;
+function landingStudentSignPage(sid){
+  LANDING_STU_PHOTO=null;LANDING_STU_LOC=null;
+  const s=DB.students.find(x=>x.id===sid);if(!s)return;
+  const cls=classById(s.classId);
+  const lc=document.getElementById('landingCard');
+  lc.innerHTML=`
+    <div class="l-logo">📸</div>
+    <div class="l-title">${esc(s.name)} · 签到</div>
+    <div class="l-sub">${esc(cls.name||'')} · 请完成以下两步</div>
+    <div class="l-photo-box">
+      <div class="l-photo-thumb" id="ls_thumb" onclick="landingStudentPhoto()">点击拍照</div>
+    </div>
+    <div class="l-loc-box" id="ls_loc">📍 定位：<span id="ls_locVal">未获取</span> <button class="btn sm" style="margin-left:6px" onclick="landingStudentLoc()">获取定位</button></div>
+    <button class="btn primary l-btn" onclick="landingStudentSign('${sid}')">✅ 提交签到</button>
+    <button class="l-back" onclick="landingStudentShow('${sid}')">← 返回</button>`;
+}
+function landingStudentPhoto(){
+  landingTakePhoto(d=>{
+    LANDING_STU_PHOTO=d;
+    const el=document.getElementById('ls_thumb');
+    if(el)el.innerHTML=`<img src="${d}" alt="签到照片">`;
+  });
+}
+function landingStudentLoc(){
+  const el=document.getElementById('ls_locVal');if(el)el.textContent='定位中…';
+  getLocation(loc=>{
+    if(!loc){const t=document.getElementById('ls_locVal');if(t)t.textContent='定位失败（可手动提交）';return;}
+    LANDING_STU_LOC=loc;
+    const t=document.getElementById('ls_locVal');
+    if(t)t.innerHTML=`${loc.addr?esc(loc.addr)+'<br>':'<br>'}经纬度：${loc.lat}, ${loc.lng}`;
+  });
+}
+function landingStudentSign(sid){
+  const s=DB.students.find(x=>x.id===sid);if(!s)return;
+  if(DB.attendance.find(a=>a.studentId===sid&&a.date===today()&&a.source==='qr')){toast('今日已签到');landingStudentShow(sid);return;}
+  const now=new Date();const hm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  const rec={id:uid('att'),studentId:sid,date:today(),status:'出勤',remark:'扫码签到',source:'qr',time:hm};
+  if(LANDING_STU_PHOTO)rec.photo=LANDING_STU_PHOTO;
+  if(LANDING_STU_LOC)rec.location=LANDING_STU_LOC;
+  DB.attendance.push(rec);
+  save();addFeed(`学生扫码签到：${s.name}`,'green');
+  landingStudentShow(sid);
+}
+
+/* ---------- 个人专属落地页（一人一码） ---------- */
+function landingUserShow(){
+  const uid=LANDING_USER_ID;
+  const u=userById(uid);
+  const lc=document.getElementById('landingCard');
+  if(!u){lc.innerHTML=`<div class="l-warn">账号不存在或数据已重置<br><button class="btn l-btn" onclick="landingExit()">返回系统</button></div>`;return;}
+  if(u.role==='teacher'){
+    const t=DB.teachers.find(x=>x.id===u.refId);
+    const todayIdx=new Date().getDay();const dayNum=todayIdx===0?7:todayIdx;
+    const myCourses=DB.courses.filter(cou=>cou.teacherId===u.refId);
+    const todaySessions=(DB.courses||[]).flatMap(cou=>{
+      if(!myCourses.some(mc=>mc.id===cou.id))return [];
+      return (cou.sessions||[]).filter(se=>se.day===dayNum).map(se=>({cou,se}));
+    });
+    lc.innerHTML=`
+      <div class="l-logo">👩‍🏫</div>
+      <div class="l-title">${esc(t?t.name:u.name)}</div>
+      <div class="l-sub">教师 · ${esc(u.no)}</div>
+      <div style="text-align:left;margin-top:18px">
+        <div style="font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:8px">📅 今日我的课程（${WEEKDAYS[dayNum-1]}）</div>
+        ${todaySessions.length?todaySessions.map(x=>`<div class="mini-stat"><span class="k">${esc(x.cou.name)} · 第${x.se.period}节</span><span class="v">${esc(x.se.room||'')}</span></div>`).join(''):'<div style="font-size:12px;color:var(--gray-400);padding:8px 0">今日暂无课程</div>'}
+      </div>
+      <div style="margin-top:14px">
+        ${myCourses.length?myCourses.map(cou=>`<button class="btn l-btn" style="display:block;width:100%;margin-bottom:8px" onclick="landingUserTeacherPunch('${u.id}','${cou.id}')">🕐 打卡上课：${esc(cou.name)}</button>`).join(''):''}
+      </div>
+      <button class="l-back" onclick="landingExit()">返回系统</button>`;
+  }else if(u.role==='student'){
+    const s=DB.students.find(x=>x.id===u.refId);
+    if(!s){lc.innerHTML=`<div class="l-warn">学生信息不存在<br><button class="btn l-btn" onclick="landingExit()">返回系统</button></div>`;return;}
+    landingStudentShow(s.id);
+  }
+}
+function landingUserTeacherPunch(userId,couId){
+  const t=userById(userId);if(!t)return;
+  const cou=DB.courses.find(x=>x.id===couId);
+  if(!cou){toast('课程不存在');return;}
+  LANDING_PHOTO=null;LANDING_LOC=null;LANDING_PUNCH_TID=t.refId;LANDING_PUNCH_COURSE=couId;LANDING_USER_ID=userId;
+  const lc=document.getElementById('landingCard');
+  lc.innerHTML=`
+    <div class="l-logo">📸</div>
+    <div class="l-title">${esc(cou.name)} · 打卡</div>
+    <div class="l-sub">请完成以下两步后提交</div>
+    <div class="l-photo-box">
+      <div class="l-photo-thumb" id="lp_thumb" onclick="landingTeacherPhoto()">点击拍照</div>
+    </div>
+    <div class="l-loc-box" id="lp_loc">📍 定位：<span id="lp_locVal">未获取</span> <button class="btn sm" style="margin-left:6px" onclick="landingTeacherLoc()">获取定位</button></div>
+    <button class="btn primary l-btn" onclick="landingUserTeacherPunchSubmit('${userId}','${couId}')">✅ 提交打卡</button>
+    <button class="l-back" onclick="landingUserShow()">← 返回</button>`;
+}
+function landingUserTeacherPunchSubmit(userId,couId){
+  const t=userById(userId);if(!t)return;
+  const cou=DB.courses.find(x=>x.id===couId);
+  if(!cou){toast('课程不存在');return;}
+  const now=new Date();const hm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  const clsIds=classIdsForCourse(couId);
+  const rec={id:uid('clog'),classId:clsIds[0]||'',courseId:couId,courseName:cou.name,teacherId:t.refId,teacherName:t.name||'',date:today(),time:hm,ts:Date.now()};
+  if(LANDING_PHOTO)rec.photo=LANDING_PHOTO;
+  if(LANDING_LOC)rec.location=LANDING_LOC;
+  if(!Array.isArray(DB.classLogs))DB.classLogs=[];
+  DB.classLogs.push(rec);
+  if(DB.classLogs.length>500)DB.classLogs=DB.classLogs.slice(-500);
+  save();addFeed(`教师打卡上课：${cou.name}`,'blue');
+  const lc=document.getElementById('landingCard');
+  lc.innerHTML=`
+    <div class="l-logo" style="background:linear-gradient(135deg,#059669,#10b981)"><div class="ok">✓</div></div>
+    <div class="l-msg">打卡成功</div>
+    <div class="l-detail">${esc(cou.name)}<br>教师：${esc(t.name)}<br>时间：${today()} ${hm}</div>
+    ${LANDING_PHOTO?`<img src="${LANDING_PHOTO}" style="width:120px;height:90px;object-fit:cover;border-radius:8px;margin-top:10px;border:1px solid var(--gray-200)">`:''}
+    ${LANDING_LOC?`<div class="l-loc-box">📍 ${esc(LANDING_LOC.addr||('经纬度：'+LANDING_LOC.lat+', '+LANDING_LOC.lng))}</div>`:''}
+    <button class="btn primary l-btn" onclick="landingExit()">返回系统</button>`;
+}
+
+/* ================= 初始化 ================= */
+if(!DB)seed();
+renderAll();
+if(restoreSession()){
+  afterLogin();
+}else{
+  document.querySelector('.sidebar').style.display='none';
+  document.querySelector('.main').style.display='none';
+  showLoginPage();
+}
+landingInit();
+</script>
+</body>
+</html>
